@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# next
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# foundry
+contracts/out/
+contracts/cache/
+
+# env
+.env*
+!.env.example
+
+# hosting
+.vercel
+
+# misc
+.DS_Store
+*.pem
+*-debug.log*
