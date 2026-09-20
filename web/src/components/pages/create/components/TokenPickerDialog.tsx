@@ -100,7 +100,7 @@ export const TokenPickerDialog = ({
                 <button
                   type="button"
                   onClick={() => chooseToken(symbol)}
-                  className="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors duration-150 ease-out hover:bg-surface-hover"
+                  className="flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left transition-colors duration-150 ease-out hover-row-green"
                 >
                   <TokenIcon token={TOKENS[symbol]} size="md" />
                   <span className="min-w-0 flex-1">

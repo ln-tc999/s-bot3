@@ -25,8 +25,8 @@ export const SwapArtPanel = () => (
         Deposit once and hold every constituent.
       </p>
       <p className="text-sm leading-relaxed text-ink-inverse/80">
-        Each token in the index is published as its own subname, so anyone can
-        read the full composition with a standard ENS library.
+        Each token in the index is published on BOT Chain, so anyone can
+        read the full composition directly from the registry.
       </p>
     </div>
   </aside>

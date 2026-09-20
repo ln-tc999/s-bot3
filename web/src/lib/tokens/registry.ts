@@ -47,6 +47,10 @@ const TOKEN_META: Record<TokenSymbol, TokenMeta> = {
   apt: { name: "Aptos", decimals: 8 },
   near: { name: "NEAR Protocol", decimals: 18 },
   atom: { name: "Cosmos", decimals: 6 },
+  agix: { name: "SingularityNET", decimals: 18 },
+  ocean: { name: "Ocean Protocol", decimals: 18 },
+  bot: { name: "BOT", decimals: 18 },
+  musdc: { name: "Mock USD", decimals: 6 },
 };
 
 export const TOKENS = Object.fromEntries(

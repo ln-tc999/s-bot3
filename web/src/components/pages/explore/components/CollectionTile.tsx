@@ -38,25 +38,33 @@ export const CollectionTile = ({
     href={href}
     aria-current={isActive ? "page" : undefined}
     className={cn(
-      "flex flex-col items-center gap-5 rounded-2xl px-5 py-7 transition-colors duration-150 ease-out",
+      "flex h-[213px] flex-col items-center justify-center gap-4 rounded-2xl p-6 transition-all duration-200 ease-out",
       isActive
-        ? "bg-surface shadow-raised ring-1 ring-accent/40"
-        : "bg-surface-subtle hover:bg-surface",
+        ? "bg-surface shadow-raised ring-2 ring-accent/60"
+        : "border border-line/60 bg-surface-subtle/80 hover:border-line-strong hover:bg-surface hover:shadow-glass",
     )}
   >
-    <TokenStack constituents={toFace(indexes)} size="lg" maxVisible={5} />
-    <span className="flex items-baseline gap-1.5">
+    <div className="flex h-12 items-center justify-center">
+      {indexes.length > 0 ? (
+        <TokenStack constituents={toFace(indexes)} size="lg" maxVisible={5} />
+      ) : (
+        <div className="flex size-10 items-center justify-center rounded-full bg-surface-hover/60 text-ink-subtle">
+          —
+        </div>
+      )}
+    </div>
+    <div className="flex flex-col items-center gap-1 text-center">
       <span
         className={cn(
-          "text-sm",
-          isActive ? "font-semibold text-ink" : "font-medium text-ink-muted",
+          "text-sm font-semibold tracking-tight",
+          isActive ? "text-ink" : "text-ink-muted",
         )}
       >
         {title}
       </span>
-      <span className="text-xs tabular-nums text-ink-subtle">
-        {indexes.length}
+      <span className="rounded-full bg-surface-hover/70 px-2.5 py-0.5 font-mono text-xs font-medium tabular-nums text-ink-subtle">
+        {indexes.length} {indexes.length === 1 ? "index" : "indexes"}
       </span>
-    </span>
+    </div>
   </Link>
 );

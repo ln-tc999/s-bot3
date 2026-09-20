@@ -159,7 +159,7 @@ export const IndexSelect = ({
                   onChange={(event) => setQuery(event.target.value)}
                   spellCheck={false}
                   autoComplete="off"
-                  placeholder="Search by name, ENS name or token"
+                  placeholder="Search by name, label or token"
                   aria-label="Search indexes"
                   className="w-full min-w-0 bg-transparent text-sm text-ink outline-none placeholder:text-ink-subtle"
                 />
@@ -187,7 +187,7 @@ export const IndexSelect = ({
                           setIsOpen(false);
                         }}
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors duration-150 ease-out hover:bg-surface-hover",
+                          "flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors duration-150 ease-out hover-row-green",
                           isSelected && "bg-accent-soft/50",
                         )}
                       >

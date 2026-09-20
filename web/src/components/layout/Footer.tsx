@@ -4,25 +4,25 @@ import { activeChain, explorerAddress } from "@/lib/chain/chains";
 import { registryAddress } from "@/lib/chain/registry";
 
 const LINK_CLASS =
-  "text-ink-muted transition-colors duration-150 ease-out hover:text-ink";
+  "text-white/70 transition-colors duration-150 ease-out hover:text-white";
 
 export const Footer = () => {
   const registry = registryAddress();
 
   return (
     <footer className="mx-auto w-full max-w-6xl px-4 pb-10 lg:px-8">
-      <div className="flex flex-col gap-4 border-t border-line pt-6 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-ink-muted">
+      <div className="flex flex-col gap-4 pt-6 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-white/80">
           {SITE.name} — {SITE.tagline}
         </p>
 
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="text-xs text-ink-subtle">Built on</span>
+          <span className="text-xs text-white/50">Built on</span>
           <a
             href="https://botchain.ai"
             target="_blank"
             rel="noreferrer"
-            className="font-semibold text-ink transition-opacity duration-150 ease-out hover:opacity-70"
+            className="font-semibold text-white transition-opacity duration-150 ease-out hover:opacity-70"
           >
             BOT Chain
           </a>

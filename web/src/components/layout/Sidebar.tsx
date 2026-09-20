@@ -1,79 +1,144 @@
 "use client";
 
+import { ArrowSquareOutIcon, DropIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PRIMARY_NAV } from "@/config/navigation";
 import { SITE } from "@/config/site";
+import { explorerAddress } from "@/lib/chain/chains";
+import { QUOTE, quoteAddress } from "@/lib/chain/quote";
+import { registryAddress } from "@/lib/chain/registry";
 import { cn } from "@/lib/cn";
-import { GLASS } from "./chrome";
-import { SidebarFooter } from "./SidebarFooter";
+import { useVaultActions } from "@/lib/onchain/useVaultActions";
+import { useWallet } from "@/lib/onchain/WalletProvider";
 
-/**
- * Destinations only. The wallet lives in the header beside this rail, so this
- * holds one kind of thing and holds it at every width: a rail on large screens,
- * a tab bar along the bottom on small ones. No drawer and no open state — a
- * phone gets the destinations where a thumb already is.
- */
 export const Sidebar = () => {
   const pathname = usePathname();
+  const { address, isBotChain } = useWallet();
+  const actions = useVaultActions();
+  const quote = quoteAddress();
+  const registry = registryAddress();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
 
+  const faucetBlocked = (() => {
+    if (!quote) return `No test ${QUOTE.ticker} deployed yet`;
+    if (!address) return "Connect a wallet first";
+    if (!isBotChain) return "Switch to BOT Chain";
+    return null;
+  })();
+
+  const isFaucetPending = actions.pending === "faucet";
+
   return (
     <>
+      {/* Floating Vertical Icon Dock (Desktop) */}
       <aside
         className={cn(
-          GLASS,
-          "fixed inset-y-4 left-4 z-40 hidden w-60 flex-col rounded-[8px] px-4 py-5 lg:flex",
+          "fixed top-1/2 left-5 z-40 hidden -translate-y-1/2 flex-col items-center gap-5 rounded-3xl border border-line-strong/60 bg-surface/95 p-3 shadow-glass backdrop-blur-2xl lg:flex",
         )}
       >
-        <Link href="/explore" className="flex shrink-0 items-center gap-2">
+        {/* App Logo */}
+        <Link
+          href="/explore"
+          title={SITE.name}
+          className="flex size-11 items-center justify-center rounded-2xl bg-surface-subtle p-2 transition-transform duration-150 ease-out hover:scale-105"
+        >
           <Image
             src="/assets/logo.svg"
-            alt=""
-            width={28}
-            height={28}
+            alt={SITE.name}
+            width={26}
+            height={26}
             priority
-            className="size-7 rounded-[8px]"
+            className="size-6 rounded-md"
           />
-          <span className="text-sm font-semibold tracking-tight text-ink">
-            {SITE.name}
-          </span>
+          <span className="sr-only">{SITE.name}</span>
         </Link>
 
-        <nav aria-label="Primary" className="mt-7 flex flex-1 flex-col gap-1">
-          {PRIMARY_NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(item.href) ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-3 rounded-[8px] px-3 py-2.5 text-sm transition-colors duration-150 ease-out",
-                isActive(item.href)
-                  ? "bg-accent font-semibold text-ink-inverse"
-                  : "font-medium text-ink hover:bg-surface-hover",
-              )}
-            >
-              <item.icon
-                size={18}
-                weight={isActive(item.href) ? "fill" : "regular"}
-                aria-hidden
-              />
-              {item.label}
-            </Link>
-          ))}
+        {/* Primary Navigation Icons */}
+        <nav
+          aria-label="Primary Dock"
+          className="flex flex-col items-center gap-2"
+        >
+          {PRIMARY_NAV.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "relative flex size-11 items-center justify-center rounded-2xl transition-all duration-150 ease-out",
+                  active
+                    ? "bg-accent text-ink-inverse shadow-raised"
+                    : "text-ink-muted hover:bg-surface-hover hover:text-ink",
+                )}
+              >
+                <item.icon
+                  size={20}
+                  weight={active ? "fill" : "regular"}
+                  aria-hidden
+                />
+                <span className="sr-only">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
-        <SidebarFooter />
+        {/* Divider */}
+        <div className="h-px w-7 bg-line" aria-hidden />
+
+        {/* Action Icons */}
+        <div className="flex flex-col items-center gap-2">
+          {/* Faucet Icon Button */}
+          <button
+            type="button"
+            onClick={() => quote && actions.faucet(quote)}
+            disabled={faucetBlocked !== null || isFaucetPending}
+            title={
+              isFaucetPending
+                ? "Minting test tokens…"
+                : faucetBlocked ?? `Get 1,000 test ${QUOTE.ticker}`
+            }
+            className={cn(
+              "flex size-11 items-center justify-center rounded-2xl transition-all duration-150 ease-out",
+              faucetBlocked
+                ? "cursor-not-allowed text-ink-subtle opacity-40"
+                : "text-accent-ink hover:bg-accent-soft hover:text-accent",
+            )}
+          >
+            <DropIcon
+              size={20}
+              weight={isFaucetPending ? "fill" : "regular"}
+              aria-hidden
+            />
+            <span className="sr-only">Get test USDC</span>
+          </button>
+
+          {/* Router / Explorer Icon Button */}
+          {registry ? (
+            <a
+              href={explorerAddress(registry)}
+              target="_blank"
+              rel="noreferrer"
+              title="View Registry on BOTScan Explorer"
+              className="flex size-11 items-center justify-center rounded-2xl text-ink-muted transition-colors duration-150 ease-out hover:bg-surface-hover hover:text-ink"
+            >
+              <ArrowSquareOutIcon size={20} aria-hidden />
+              <span className="sr-only">View Registry on Explorer</span>
+            </a>
+          ) : null}
+        </div>
       </aside>
 
+      {/* Mobile Compact Navigation Bar */}
       <nav
         aria-label="Primary, compact"
         className={cn(
-          GLASS,
-          "fixed inset-x-3 bottom-3 z-40 mb-[env(safe-area-inset-bottom)] flex items-stretch justify-around rounded-[8px] lg:hidden",
+          "fixed inset-x-3 bottom-3 z-40 mb-[env(safe-area-inset-bottom)] flex items-stretch justify-around rounded-2xl border border-line-strong/60 bg-surface/90 p-1.5 shadow-glass backdrop-blur-2xl lg:hidden",
         )}
       >
         {PRIMARY_NAV.map((item) => (
@@ -82,7 +147,7 @@ export const Sidebar = () => {
             href={item.href}
             aria-current={isActive(item.href) ? "page" : undefined}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 rounded-[8px] py-2.5 text-[11px] transition-colors duration-150 ease-out",
+              "flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[11px] transition-colors duration-150 ease-out",
               isActive(item.href)
                 ? "font-semibold text-accent-ink"
                 : "font-medium text-ink",

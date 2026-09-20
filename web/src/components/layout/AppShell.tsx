@@ -24,11 +24,14 @@ export const AppShell = ({ children }: AppShellProps) => (
      *
      * The bottom padding is on the wrapper rather than on `main`, so the
      * footer clears the mobile tab bar too instead of hiding behind it.
+     *
+     * The Dithering background is fixed at z-0; this wrapper sits above it
+     * (relative z-10) so the shader shows through blurred cards and glass.
      */}
-    <div className="flex min-h-dvh flex-col pb-28 lg:pb-0 lg:pl-[17rem]">
+    <div className="relative z-10 flex min-h-dvh flex-col pb-28 lg:pb-0 lg:pl-[5.5rem]">
       <Sidebar />
       <Header />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-8 lg:px-8">
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-8 lg:px-8">
         {children}
       </main>
       <Footer />

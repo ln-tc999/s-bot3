@@ -145,7 +145,7 @@ const WalletControl = () => {
  * way.
  */
 export const Header = () => (
-  <header className="sticky top-3 z-30 flex px-4 pt-1 lg:top-4 lg:px-8">
+  <header className="sticky top-3 z-30 flex justify-end px-4 pt-1 lg:top-4 lg:px-8">
     <WalletControl />
   </header>
 );

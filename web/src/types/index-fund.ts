@@ -33,6 +33,10 @@ export const TOKEN_SYMBOLS = [
   "apt",
   "near",
   "atom",
+  "agix",
+  "ocean",
+  "bot",
+  "musdc",
 ] as const;
 
 export type TokenSymbol = (typeof TOKEN_SYMBOLS)[number];

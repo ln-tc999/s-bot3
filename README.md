@@ -21,7 +21,7 @@ s-bot3 keeps them apart, and the contract is what keeps them apart — not a
 promise in a document.
 
 - **Publish an index.** Pick tokens, give each a weight, write down your
-  methodology. One transaction. The wallet that signs it owns it.
+  methodology. One transaction on BOT Chain. The wallet that signs it owns it.
 - **Freeze the methodology.** One more transaction and the rules can never be
   rewritten. There is no unlock function and no admin who could add one — not
   the owner, not us.
@@ -56,7 +56,7 @@ You need a little BOT for gas. On testnet, take it from
 
 | Network | Chain ID | `SBot3Registry` | `MockERC20` (mUSDC) |
 |---|---|---|---|
-| BOT Chain Testnet | `968` | `<TESTNET_REGISTRY>` | `<TESTNET_QUOTE>` |
+| BOT Chain Testnet | `968` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
 | BOT Chain Mainnet | `677` | `<MAINNET_REGISTRY>` | `<MAINNET_QUOTE>` |
 
 Deploy `SBot3Registry` and `MockERC20` once each, then paste both into

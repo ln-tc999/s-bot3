@@ -37,7 +37,7 @@ export const SwapPage = ({ indexSlug }: SwapPageProps) => {
           ) : (
             <EmptyState
               title="No index is tradeable yet"
-              description="An index becomes tradeable once its ENS name resolves to a share token. Run pnpm wire-index <slug> to publish one."
+              description="An index becomes tradeable once its share token is attached on BOT Chain. Go to the index page and click Enable trading to publish one."
             />
           )}
         </Card>

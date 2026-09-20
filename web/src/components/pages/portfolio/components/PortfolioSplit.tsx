@@ -126,7 +126,7 @@ export const PortfolioSplit = ({
         <div className="flex items-start justify-between gap-4">
           <p className="text-sm text-ink-muted">Portfolio value</p>
           <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle py-1 pr-2.5 pl-1 text-xs font-medium text-ink-muted">
-            <TokenIcon token={TOKENS.eth} size="sm" className="ring-0" />
+            <TokenIcon token={TOKENS.bot} size="sm" className="ring-0" />
             {activeChain.name}
           </span>
         </div>
@@ -195,7 +195,7 @@ export const PortfolioSplit = ({
                 <li key={position.index.label} className="border-t border-line">
                   <Link
                     href={indexHref(position.index.label)}
-                    className="group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors duration-150 ease-out hover:bg-surface-hover"
+                    className="group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors duration-150 ease-out hover-row-green"
                   >
                     <span className="flex min-w-0 items-center gap-3">
                       <TokenStack

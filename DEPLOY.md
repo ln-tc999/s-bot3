@@ -103,7 +103,7 @@ sidebar will still say *Not deployed yet*.
 
 In the browser, with a wallet holding testnet BOT:
 
-1. **Create** → publish an index. One signature.
+1. **Create** → publish an index. One signature on BOT Chain.
 2. On the index page → **Lock it**. Confirm the methodology row now reads
    *Locked* and the button is gone.
 3. **Enable trading** → two signatures: one deploys that index's `IndexVault`,
@@ -112,7 +112,11 @@ In the browser, with a wallet holding testnet BOT:
 5. **Portfolio** → the position appears.
 
 If step 3 or 4 fails, check `NEXT_PUBLIC_QUOTE_ADDRESS` first — a missing quote
-token is the only thing that disables trading while everything else works.
+ token is the only thing that disables trading while everything else works.
+
+> **Note on naming.** Every index on BOT Chain is identified by its `label` —
+> a short, unique string written onchain at creation. There is no ENS involved;
+> the label is the native identifier and can be read directly from the registry.
 
 ---
 
