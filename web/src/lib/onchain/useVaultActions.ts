@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { erc20Abi, maxUint256 } from "viem";
 import { publicClient } from "@/lib/chain/client";
-import { quoteAddress } from "@/lib/chain/quote";
 import { indexVaultAbi, mockErc20Abi } from "@/lib/chain/vault";
 import { useWallet } from "./WalletProvider";
 
@@ -56,20 +55,20 @@ export const useVaultActions = () => {
     [address, isBotChain, refresh, switchNetwork],
   );
 
-  /** Approves only when the existing allowance is short, so repeat deposits are one transaction. */
+  /**
+   * Approves only what is short, so a repeat subscription is one signature
+   * instead of one per constituent every time.
+   */
   const ensureAllowance = useCallback(
-    async (spender: `0x${string}`, amount: bigint) => {
-      const quote = quoteAddress();
-      const owner = address as `0x${string}`;
-
-      if (!quote) {
-        throw new Error(
-          "No settlement token is configured for this deployment.",
-        );
+    async (token: `0x${string}`, spender: `0x${string}`, amount: bigint) => {
+      if (amount === 0n) {
+        return;
       }
 
+      const owner = address as `0x${string}`;
+
       const allowance = await publicClient.readContract({
-        address: quote,
+        address: token,
         abi: erc20Abi,
         functionName: "allowance",
         args: [owner, spender],
@@ -79,9 +78,8 @@ export const useVaultActions = () => {
         return;
       }
 
-      const client = getWalletClient();
-      const hash = await client.writeContract({
-        address: quote,
+      const hash = await getWalletClient().writeContract({
+        address: token,
         abi: erc20Abi,
         functionName: "approve",
         args: [spender, maxUint256],
@@ -91,15 +89,30 @@ export const useVaultActions = () => {
     [address, getWalletClient],
   );
 
-  const deposit = useCallback(
-    (vault: `0x${string}`, quoteAmount: bigint) =>
-      send("deposit", async () => {
-        await ensureAllowance(vault, quoteAmount);
+  /**
+   * Deliver the basket and mint shares.
+   *
+   * `maxAmounts` is quoted immediately before this runs and passed straight
+   * through: the vault reads weights live, so an agent rebalancing in between
+   * would otherwise pull a different basket than the one the user approved.
+   */
+  const subscribe = useCallback(
+    (
+      vault: `0x${string}`,
+      shares: bigint,
+      tokens: readonly `0x${string}`[],
+      maxAmounts: readonly bigint[],
+    ) =>
+      send("subscribe", async () => {
+        for (const [index, token] of tokens.entries()) {
+          await ensureAllowance(token, vault, maxAmounts[index] ?? 0n);
+        }
+
         return getWalletClient().writeContract({
           address: vault,
           abi: indexVaultAbi,
-          functionName: "deposit",
-          args: [quoteAmount],
+          functionName: "subscribe",
+          args: [shares, [...maxAmounts]],
         });
       }),
     [ensureAllowance, getWalletClient, send],
@@ -119,55 +132,37 @@ export const useVaultActions = () => {
   );
 
   /**
-   * There is no index to index route onchain, and inventing one would mean a
-   * router holding both vaults' quote. Redeeming and redepositing is the same
-   * trade with the same result, just visibly two signatures.
+   * Fund a wallet with the constituents it is short of.
+   *
+   * Each `faucet()` mints one fixed claim, so a large subscription can need
+   * several rounds — the caller decides how many by what it passes in.
    */
-  const swap = useCallback(
-    (from: `0x${string}`, to: `0x${string}`, shares: bigint) =>
-      send("swap", async () => {
-        const quoteAmount = await publicClient.readContract({
-          address: from,
-          abi: indexVaultAbi,
-          functionName: "previewRedeem",
-          args: [shares],
-        });
-
-        const client = getWalletClient();
-        const redeemHash = await client.writeContract({
-          address: from,
-          abi: indexVaultAbi,
-          functionName: "redeem",
-          args: [shares],
-        });
-        await publicClient.waitForTransactionReceipt({ hash: redeemHash });
-
-        await ensureAllowance(to, quoteAmount);
-
-        return client.writeContract({
-          address: to,
-          abi: indexVaultAbi,
-          functionName: "deposit",
-          args: [quoteAmount],
-        });
-      }),
-    [ensureAllowance, getWalletClient, send],
-  );
-
   const faucet = useCallback(
-    (token: `0x${string}`) =>
-      send("faucet", () =>
-        getWalletClient().writeContract({
-          address: token,
-          abi: mockErc20Abi,
-          functionName: "faucet",
-        }),
-      ),
+    (tokens: readonly `0x${string}`[]) =>
+      send("faucet", async () => {
+        const client = getWalletClient();
+        let last: `0x${string}` | undefined;
+
+        for (const token of tokens) {
+          last = await client.writeContract({
+            address: token,
+            abi: mockErc20Abi,
+            functionName: "faucet",
+          });
+          await publicClient.waitForTransactionReceipt({ hash: last });
+        }
+
+        if (!last) {
+          throw new Error("Nothing to claim.");
+        }
+
+        return last;
+      }),
     [getWalletClient, send],
   );
 
   /** Clearing the result is what closes the success dialog. */
   const dismiss = useCallback(() => setLast(null), []);
 
-  return { pending, error, last, dismiss, deposit, redeem, swap, faucet };
+  return { pending, error, last, dismiss, subscribe, redeem, faucet };
 };

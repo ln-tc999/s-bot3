@@ -88,6 +88,7 @@ export const IndexDetailPage = ({ index }: IndexDetailPageProps) => (
         name={index.name}
         owner={index.owner}
         vault={index.vault}
+        constituents={index.constituents}
       />
       <RebalancerCard index={index} />
     </div>

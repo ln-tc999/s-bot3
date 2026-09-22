@@ -16,11 +16,11 @@ export interface NavItem {
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: HouseIcon },
   { href: "/explore", label: "Explore", icon: CompassIcon },
-  { href: "/swap", label: "Trade", icon: ArrowsLeftRightIcon },
+  { href: "/trade", label: "Trade", icon: ArrowsLeftRightIcon },
   { href: "/create", label: "Create", icon: PlusCircleIcon },
   { href: "/portfolio", label: "Portfolio", icon: ChartPieSliceIcon },
 ];
 
 export const indexHref = (label: string): string => `/indexes/${label}`;
 
-export const swapHref = (label: string): string => `/swap?index=${label}`;
+export const tradeHref = (label: string): string => `/trade/${label}`;

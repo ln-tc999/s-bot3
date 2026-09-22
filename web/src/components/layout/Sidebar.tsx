@@ -1,36 +1,21 @@
 "use client";
 
-import { ArrowSquareOutIcon, DropIcon } from "@phosphor-icons/react/dist/ssr";
+import { ArrowSquareOutIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PRIMARY_NAV } from "@/config/navigation";
 import { SITE } from "@/config/site";
 import { explorerAddress } from "@/lib/chain/chains";
-import { QUOTE, quoteAddress } from "@/lib/chain/quote";
 import { registryAddress } from "@/lib/chain/registry";
 import { cn } from "@/lib/cn";
-import { useVaultActions } from "@/lib/onchain/useVaultActions";
-import { useWallet } from "@/lib/onchain/WalletProvider";
 
 export const Sidebar = () => {
   const pathname = usePathname();
-  const { address, isBotChain } = useWallet();
-  const actions = useVaultActions();
-  const quote = quoteAddress();
   const registry = registryAddress();
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
-
-  const faucetBlocked = (() => {
-    if (!quote) return `No test ${QUOTE.ticker} deployed yet`;
-    if (!address) return "Connect a wallet first";
-    if (!isBotChain) return "Switch to BOT Chain";
-    return null;
-  })();
-
-  const isFaucetPending = actions.pending === "faucet";
 
   return (
     <>
@@ -91,33 +76,8 @@ export const Sidebar = () => {
         {/* Divider */}
         <div className="h-px w-7 bg-line" aria-hidden />
 
-        {/* Action Icons */}
+        {/* Registry link */}
         <div className="flex flex-col items-center gap-2">
-          {/* Faucet Icon Button */}
-          <button
-            type="button"
-            onClick={() => quote && actions.faucet(quote)}
-            disabled={faucetBlocked !== null || isFaucetPending}
-            title={
-              isFaucetPending
-                ? "Minting test tokens…"
-                : faucetBlocked ?? `Get 1,000 test ${QUOTE.ticker}`
-            }
-            className={cn(
-              "flex size-11 items-center justify-center rounded-2xl transition-all duration-150 ease-out",
-              faucetBlocked
-                ? "cursor-not-allowed text-ink-subtle opacity-40"
-                : "text-accent-ink hover:bg-accent-soft hover:text-accent",
-            )}
-          >
-            <DropIcon
-              size={20}
-              weight={isFaucetPending ? "fill" : "regular"}
-              aria-hidden
-            />
-            <span className="sr-only">Get test USDC</span>
-          </button>
-
           {/* Router / Explorer Icon Button */}
           {registry ? (
             <a

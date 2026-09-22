@@ -22,6 +22,16 @@ import { type StepDefinition, Stepper } from "./Stepper";
 import { TokenPickerDialog } from "./TokenPickerDialog";
 
 const TOTAL_WEIGHT_BPS = 10_000;
+
+/** Mirrors `SBot3Registry.MAX_CONSTITUENTS`. */
+const MAX_CONSTITUENTS = 16;
+
+/**
+ * Past this the cost is mostly the subscriber's, not yours: settling in kind
+ * means one approval per constituent the first time, and one transfer every
+ * time. Publishing is still allowed — it just stops being free to someone else.
+ */
+const CROWDED_CONSTITUENTS = 8;
 const SLUG_PATTERN = /[^a-z0-9-]/g;
 const PLACEHOLDER_SLUG = "your-index";
 
@@ -133,9 +143,15 @@ export const IndexBuilderForm = () => {
     [selectedSymbols, weights],
   );
 
-  const availableSymbols = TOKEN_SYMBOLS.filter(
-    (symbol) => !selectedSymbols.includes(symbol),
-  );
+  /**
+   * The contract caps an index at `MAX_CONSTITUENTS`, because settlement in
+   * kind touches every constituent in one transaction. Hitting the cap here
+   * beats hitting it as a revert after the user has filled the whole form.
+   */
+  const isFull = selectedSymbols.length >= MAX_CONSTITUENTS;
+  const availableSymbols = isFull
+    ? []
+    : TOKEN_SYMBOLS.filter((symbol) => !selectedSymbols.includes(symbol));
   const isBalanced = totalWeightBps === TOTAL_WEIGHT_BPS;
   const hasIdentity = slug.length > 0;
   const hasConstituents = selectedSymbols.length > 0 && isBalanced;
@@ -349,6 +365,16 @@ export const IndexBuilderForm = () => {
               replaceSymbols([...selectedSymbols, symbol]);
             }}
           />
+
+          {isFull ? (
+            <p className="px-1 text-xs text-ink-muted">
+              {`${MAX_CONSTITUENTS} constituents is the cap — a subscription has to deliver every one of them in a single transaction.`}
+            </p>
+          ) : selectedSymbols.length > CROWDED_CONSTITUENTS ? (
+            <p className="px-1 text-xs text-ink-muted">
+              {`${selectedSymbols.length} constituents means ${selectedSymbols.length} approvals for anyone subscribing the first time. Allowed, but it is their cost, not yours.`}
+            </p>
+          ) : null}
 
           {!isBalanced ? (
             <p className="px-1 text-xs text-negative">
