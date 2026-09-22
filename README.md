@@ -78,6 +78,34 @@ declared once by the index owner at deployment and immutable after. It converts
 a weight, which is a share of value, into a quantity of tokens. It is not a
 market price, there is no feed behind it, and only the fee moves NAV.
 
+### What that looks like
+
+An index of `btc` and `eth` at unit prices of 60,000 and 3,000, seeded at a NAV
+of 100, with a 20 bps fee of which 5 goes to the index owner. Ten shares have
+been subscribed, and the agent has just rebalanced from 60/40 to 80/20.
+
+Subscribing for twenty more shares at that moment costs 20 × 100.15 = 2,003 of
+notional, which the vault asks for as a basket:
+
+| | delivered | of which to the owner | kept by the vault |
+|---|---|---|---|
+| `btc` | 0.02676009 | 0.00001335 | 0.02674674 |
+| `eth` | 0.13380040 | 0.00006677 | 0.13373363 |
+
+and twenty shares are minted. Two things move:
+
+```
+navPerShare   100.150000 -> 100.250177     the 15 bps the owner was not paid
+driftBps            2000 ->        665     new money arrived at the new weights
+```
+
+Redeeming is where the drift becomes visible in a wallet. At that point minting
+one share costs `0.00133935 btc + 0.00669671 eth`, while redeeming one returns
+`0.00122293 btc + 0.00889108 eth` — more eth back than went in, because you mint
+at the **target** weights and redeem the **actual** mix the vault still holds.
+The value is what you would expect: 100.45 in, 100.05 out, the difference being
+the fee charged on both sides.
+
 ## How to use it
 
 1. Open the site and click **Connect**. If your wallet has never seen BOT Chain,
@@ -142,7 +170,21 @@ registry stores no addresses on purpose; this is where settlement gets one.
 
 [`IndexVault.sol`](contracts/src/IndexVault.sol) is the share token an index
 settles in: it holds the real basket, mints against deliveries at the published
-weights, and redeems pro rata of what it has.
+weights, and redeems pro rata of what it has. It has no owner and no setters —
+every number it was deployed with is immutable, including the fee and where the
+fee goes.
+
+| Function | What it does |
+|---|---|
+| `previewSubscribe(shares)` | The basket that mints `shares`, fee included, at the weights published right now. |
+| `subscribe(shares, maxAmounts)` | Delivers it and mints. `maxAmounts` bounds what a rebalance between the quote and the block can pull. |
+| `previewRedeem(shares)` | A pro rata slice of the actual holdings, less the fee. Not the published weights. |
+| `redeem(shares)` | Burns and pays it out. |
+| `navPerShare()` | Units of account per whole share, derived from what is held. Rises with the fee, cannot fall. |
+| `driftBps()` | How far the holdings sit from the published weights. |
+| `weights()` | Read straight from the registry — the vault copies nothing. |
+| `holdings()` / `totalNotional()` | What is actually in the basket. |
+| `feeBps` / `ownerFeeBps` / `feeRecipient` | The fee, the owner's slice of it, and where that slice goes. Capped at 1%, and the slice can never exceed the fee. |
 
 [`MockERC20.sol`](contracts/src/MockERC20.sol) is a test constituent with an open
 `faucet()`, so a visitor can assemble a basket without asking anyone. Testnet
@@ -155,8 +197,9 @@ only — on mainnet the book binds real tokens instead.
 two contracts, because one carrying a registry, a book, a token and a vault at
 once lands over the 24 KB deployment limit. Deploy each in Remix and call
 `check()`: it returns `true`, or it reverts naming the assertion that failed.
-They prove the negative cases too — that the owner is refused after locking, that the agent is refused
-everywhere except `setWeights`, that a bound symbol cannot be repointed, that a
+They prove the negative cases too — that the owner is refused after locking,
+that the agent is refused everywhere except `setWeights`, that a bound symbol
+cannot be repointed, that a
 vault naming the wrong label is refused, that an owner slice above the fee is
 refused, that NAV never falls even when the owner is being paid, that a rebalance
 opens drift and a subscription closes it, and that redeeming always returns less
@@ -179,6 +222,26 @@ pnpm dev
 
 Set `NEXT_PUBLIC_CHAIN_ID=677` to point a deployment at mainnet; unset it and it
 talks to testnet.
+
+### Against a local chain
+
+Nothing here needs a testnet. Anvil ships with Foundry, and the whole flow —
+publish, attach a vault, subscribe, rebalance, watch the drift close — runs on
+it in about a minute:
+
+```bash
+anvil --chain-id 968 &
+```
+
+Deploy `SBot3Registry` and `TokenBook`, deploy a `MockERC20` per symbol and
+register each one in the book, then put the two addresses plus
+`NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545` in `web/.env.local`. The commands are
+the same ones in [DEPLOY.md](DEPLOY.md), with `--rpc-url http://127.0.0.1:8545`
+and any of anvil's funded keys.
+
+Give the mocks realistic decimals — 8 for `btc`, 18 for `eth`. The scaling
+between a weight and a quantity runs through them, and it is the one place an
+in-kind vault misprices silently.
 
 After changing a contract, regenerate what the site ships with — the ABIs and the
 `IndexVault` creation bytecode the browser deploys:
