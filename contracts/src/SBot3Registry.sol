@@ -14,9 +14,25 @@ pragma solidity ^0.8.20;
 ///
 /// One contract, zero dependencies, zero permissioned transfers. Any wallet can
 /// publish, so a stranger's wallet is never a special case.
+/// The one thing this registry asks of a vault before it will carry its address.
+interface IVaultLabel {
+    function label() external view returns (string memory);
+}
+
 contract SBot3Registry {
     /// Weights are basis points and must always total exactly this.
     uint16 public constant TOTAL_BPS = 10_000;
+
+    /// Settlement in kind touches every constituent in one transaction, so the
+    /// list has to stay short enough that a subscribe never runs out of gas.
+    ///
+    /// Sixteen, not unbounded: the publisher picks the number, but a cap has to
+    /// exist somewhere or an index can be published that nobody can ever
+    /// subscribe to, and the failure would arrive as an out-of-gas at submit
+    /// rather than as a refusal at publish. Past eight the cost the publisher is
+    /// choosing is mostly the subscriber's — one approval per constituent, the
+    /// first time.
+    uint256 public constant MAX_CONSTITUENTS = 16;
 
     struct Index {
         address owner;
@@ -56,6 +72,9 @@ contract SBot3Registry {
     error DuplicateSymbol(string symbol);
     error VaultAlreadySet(string label);
     error ZeroVault();
+    error TooManyConstituents(uint256 got);
+    error VaultLabelMismatch(string label, string vaultLabel);
+    error VaultNotConforming(address vault);
 
     function _key(string memory label) private pure returns (bytes32) {
         return keccak256(bytes(label));
@@ -77,6 +96,7 @@ contract SBot3Registry {
     ) external {
         if (bytes(label).length == 0) revert EmptyLabel();
         if (symbols.length == 0) revert EmptyIndex();
+        if (symbols.length > MAX_CONSTITUENTS) revert TooManyConstituents(symbols.length);
         if (symbols.length != weights.length) revert LengthMismatch(symbols.length, weights.length);
 
         bytes32 key = _key(label);
@@ -148,6 +168,18 @@ contract SBot3Registry {
         if (msg.sender != ix.owner) revert NotOwner(label, msg.sender);
         if (vault == address(0)) revert ZeroVault();
         if (ix.vault != address(0)) revert VaultAlreadySet(label);
+
+        // Set once protects depositors from a vault swapped out underneath them.
+        // It does nothing about the first one, so the vault is asked to name the
+        // label it settles, and an address that cannot answer is refused.
+        try IVaultLabel(vault).label() returns (string memory declared) {
+            if (keccak256(bytes(declared)) != keccak256(bytes(label))) {
+                revert VaultLabelMismatch(label, declared);
+            }
+        } catch {
+            revert VaultNotConforming(vault);
+        }
+
         ix.vault = vault;
         emit VaultSet(label, vault);
     }
@@ -204,6 +236,26 @@ contract SBot3Registry {
         return (
             ix.owner, ix.agent, ix.vault, ix.locked, ix.createdAt, ix.name, ix.methodology, symbols, weights
         );
+    }
+
+    /// @notice Weights alone, in the stored symbol order.
+    ///
+    /// `getIndex` returns the methodology and the name with it, which a vault
+    /// pays for in gas on every subscribe and never reads. This is the same
+    /// numbers without the prose.
+    function weightsOf(string calldata label) external view returns (uint16[] memory weights) {
+        Index storage ix = _get(label);
+        bytes32 key = _key(label);
+        uint256 n = ix.symbols.length;
+
+        weights = new uint16[](n);
+        for (uint256 i; i < n; ++i) {
+            weights[i] = _weights[key][keccak256(bytes(ix.symbols[i]))];
+        }
+    }
+
+    function symbolsOf(string calldata label) external view returns (string[] memory) {
+        return _get(label).symbols;
     }
 
     function weightOf(string calldata label, string calldata symbol) external view returns (uint16) {

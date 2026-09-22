@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IndexVault} from "./IndexVault.sol";
-import {MockERC20} from "./MockERC20.sol";
 import {SBot3Registry} from "./SBot3Registry.sol";
 
 /// Stands in for the rebalancing agent, so the delegation can be exercised from
@@ -21,9 +19,26 @@ contract DelegatedAgent {
     }
 }
 
-/// @notice One runnable check for the claims that are not obvious from reading.
+/// Answers `label()`, which is all `setVault` asks of a vault. Using stubs here
+/// rather than a real `IndexVault` is not a shortcut: the guard is a registry
+/// claim, and the registry only ever calls this one function.
+contract LabelStub {
+    string public label;
+
+    constructor(string memory _label) {
+        label = _label;
+    }
+}
+
+/// @notice The registry's claims, as one runnable check.
+///
 /// Deploy it in Remix and call `check()`: it returns true, or it reverts with
 /// the assertion that failed. No framework, no test runner.
+///
+/// Settlement is checked separately, by `IndexVaultCheck`. Together they exceed
+/// the 24 KB contract limit, because each one carries the creation bytecode of
+/// everything it deploys internally — so they are two deployments and two green
+/// calls rather than one.
 contract SBot3RegistryCheck {
     function check() external returns (bool) {
         SBot3Registry r = new SBot3Registry();
@@ -42,6 +57,10 @@ contract SBot3RegistryCheck {
         require(r.exists("demo"), "create: not stored");
         require(r.totalIndexes() == 1, "create: not listed");
         require(r.weightOf("demo", "btc") == 6000, "create: weight lost");
+        require(r.weightsOf("demo")[1] == 4000, "weightsOf: wrong order");
+        require(
+            keccak256(bytes(r.symbolsOf("demo")[0])) == keccak256(bytes("btc")), "symbolsOf: wrong order"
+        );
 
         // Weights that do not total 10,000 bps are refused.
         uint16[] memory bad = new uint16[](2);
@@ -58,6 +77,8 @@ contract SBot3RegistryCheck {
         try r.create("dupe", "Dupe", dupes, weights, "") {
             revert("create: duplicate symbol accepted");
         } catch {}
+
+        _checkConstituentCap(r);
 
         r.lock("demo");
         require(r.isLocked("demo"), "lock: not set");
@@ -97,43 +118,64 @@ contract SBot3RegistryCheck {
             revert("revoke: agent still authorised");
         } catch {}
 
-        _checkVault(r);
+        _checkSetVault(r, agent);
 
         return true;
     }
 
     /**
-     * Settlement: the vault attaches once, and a deposit followed by an
-     * immediate redeem can never hand back more than it took. Integer division
-     * rounds toward the vault, so the shortfall is the vault's margin, not the
-     * depositor's loss of principal beyond one wei of dust.
+     * The vault attaches once, and only to an address that says it settles this
+     * label.
+     *
+     * Set-once protects a depositor from a vault swapped out underneath them;
+     * the label check is what protects the first one. Whether the thing being
+     * attached is a working vault is `IndexVaultCheck`'s business — the registry
+     * only asks it to name the label it settles.
      */
-    function _checkVault(SBot3Registry r) private {
-        MockERC20 quote = new MockERC20("Mock USD", "mUSDC", 6, 1_000e6);
-        IndexVault vault = new IndexVault("Demo Share", "DEMO", "demo", address(quote), 100e6);
-
+    function _checkSetVault(SBot3Registry r, DelegatedAgent agent) private {
         try r.setVault("demo", address(0)) {
             revert("setVault: zero accepted");
         } catch {}
 
-        r.setVault("demo", address(vault));
-        require(r.vaultOf("demo") == address(vault), "setVault: not stored");
-
-        // Set once, and there is no second call that could move it.
-        IndexVault other = new IndexVault("Other", "OTHR", "demo", address(quote), 100e6);
-        try r.setVault("demo", address(other)) {
-            revert("setVault: vault was replaceable");
+        // Nothing to ask `label()` of.
+        try r.setVault("demo", address(agent)) {
+            revert("setVault: non-conforming address accepted");
         } catch {}
 
-        quote.mint(address(this), 500e6);
-        quote.approve(address(vault), 500e6);
+        try r.setVault("demo", address(new LabelStub("not-demo"))) {
+            revert("setVault: wrong label accepted");
+        } catch {}
 
-        uint256 before = quote.balanceOf(address(this));
-        uint256 shares = vault.deposit(500e6);
-        require(shares == 5e18, "vault: wrong share count");
+        address vault = address(new LabelStub("demo"));
+        r.setVault("demo", vault);
+        require(r.vaultOf("demo") == vault, "setVault: not stored");
 
-        uint256 returned = vault.redeem(shares);
-        require(returned <= 500e6, "vault: returned more than it took");
-        require(quote.balanceOf(address(this)) <= before, "vault: minted value from nothing");
+        // Set once, and there is no second call that could move it.
+        try r.setVault("demo", address(new LabelStub("demo"))) {
+            revert("setVault: vault was replaceable");
+        } catch {}
+    }
+
+    /// Settlement in kind touches every constituent in one transaction, so the
+    /// list is capped rather than left to run out of gas in front of a user.
+    function _checkConstituentCap(SBot3Registry r) private {
+        uint256 n = r.MAX_CONSTITUENTS() + 1;
+        string[] memory many = new string[](n);
+        uint16[] memory split = new uint16[](n);
+
+        uint256 each = 10_000 / n;
+        for (uint256 i; i < n; ++i) {
+            many[i] = string(abi.encodePacked("t", _digit(i)));
+            split[i] = uint16(i == 0 ? 10_000 - each * (n - 1) : each);
+        }
+
+        try r.create("wide", "Too wide", many, split, "") {
+            revert("create: constituent cap ignored");
+        } catch {}
+    }
+
+    /// Just needs to be unique per index, not readable.
+    function _digit(uint256 i) private pure returns (bytes1) {
+        return bytes1(uint8(65 + i));
     }
 }

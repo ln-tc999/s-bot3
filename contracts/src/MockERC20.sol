@@ -3,9 +3,13 @@ pragma solidity ^0.8.28;
 
 import {ERC20} from "./ERC20.sol";
 
-/// @notice The quote asset every vault settles in. Anyone can mint, which is
-/// the point: a visitor has to be able to fund a wallet without asking anyone.
-/// Never deploy this to a network where the balance is supposed to mean
+/// @notice A stand-in constituent, for testnet. Anyone can mint, which is the
+/// point: subscribing delivers the whole basket, so a visitor has to be able to
+/// assemble one without asking anyone.
+///
+/// Bind it to a symbol in `TokenBook` and vaults settle against it like any
+/// other ERC20. On mainnet the book binds real tokens and this is not deployed
+/// at all. Never deploy it to a network where the balance is supposed to mean
 /// something.
 contract MockERC20 is ERC20 {
     /// One `faucet()` claim. Denominated in whole units by the deploy script.
