@@ -52,6 +52,15 @@ No indexer, no subgraph, no backend, no API key.
 You need a little BOT for gas. On testnet, take it from
 [faucet.botchain.ai/basic](https://faucet.botchain.ai/basic).
 
+## Live
+
+**[s-bot3.vercel.app](https://s-bot3.vercel.app)**
+
+The site supports **both networks in one deployment**. A network switcher in
+the header lets you flip between BOT Chain Testnet and BOT Chain Mainnet —
+the wallet switches chains, and balances, index data, and explorer links
+reload from the selected network automatically.
+
 ## Deployment
 
 | Network | Chain ID | `SBot3Registry` | `MockERC20` (mUSDC) |
@@ -59,9 +68,18 @@ You need a little BOT for gas. On testnet, take it from
 | BOT Chain Testnet | `968` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
 | BOT Chain Mainnet | `677` | `<MAINNET_REGISTRY>` | `<MAINNET_QUOTE>` |
 
-Deploy `SBot3Registry` and `MockERC20` once each, then paste both into
-`web/.env.local`. Every index's share token is deployed from the site by
-whoever owns that index, so it never needs to be listed here.
+Contract addresses are configured per chain in
+[`web/src/config/contracts.ts`](web/src/config/contracts.ts). The testnet
+addresses are hardcoded as defaults; the mainnet addresses are read from
+environment variables:
+
+```bash
+NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS=0x...
+```
+
+Every index's share token is deployed from the site by whoever owns that
+index, so it never needs to be listed here.
 
 Step by step, including the constructor arguments and how to prove the
 deployment works: **[DEPLOY.md](DEPLOY.md)**.
@@ -114,12 +132,21 @@ forge test --root contracts
 ```bash
 cd web
 pnpm install
-cp .env.example .env.local     # then fill in NEXT_PUBLIC_REGISTRY_ADDRESS
+cp .env.example .env.local     # then fill in the contract addresses
 pnpm dev
 ```
 
-Set `NEXT_PUBLIC_CHAIN_ID=677` to point a deployment at mainnet; unset it and it
-talks to testnet.
+The site ships with a **network switcher** in the header. Testnet (`968`) is
+the default; no env var is needed to use it. To enable mainnet (`677`), set
+the mainnet contract addresses:
+
+```bash
+NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS=0x...
+```
+
+Once set, the switcher in the header lets users flip between testnet and
+mainnet at runtime — no rebuild required.
 
 ## Built on
 
