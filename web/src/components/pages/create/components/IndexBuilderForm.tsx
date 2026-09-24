@@ -218,7 +218,7 @@ export const IndexBuilderForm = () => {
     >
       <header className="flex items-center gap-3.5 border-b border-line pb-5">
         <Image
-          src="/assets/logo.svg"
+          src="/assets/logo.png"
           alt=""
           width={44}
           height={44}

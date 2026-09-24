@@ -50,7 +50,7 @@ export const Sidebar = () => {
           className="flex size-11 items-center justify-center rounded-2xl bg-surface-subtle p-2 transition-transform duration-150 ease-out hover:scale-105"
         >
           <Image
-            src="/assets/logo.svg"
+            src="/assets/logo.png"
             alt={SITE.name}
             width={26}
             height={26}

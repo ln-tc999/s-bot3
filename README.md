@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/public/assets/logo.svg" alt="s-bot3" width="72" />
+  <img src="web/public/assets/logo.png" alt="s-bot3" width="72" />
 </p>
 
 <h1 align="center">s-bot3</h1>
