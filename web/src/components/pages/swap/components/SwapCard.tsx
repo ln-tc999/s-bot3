@@ -3,6 +3,7 @@
 import { ArrowsDownUpIcon } from "@phosphor-icons/react/dist/ssr";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { NETWORKS } from "@/config/contracts";
 import { TokenIcon } from "@/components/ui/TokenIcon";
 import { TokenStack } from "@/components/ui/TokenStack";
 import { TxSuccessDialog } from "@/components/ui/TxSuccessDialog";
@@ -83,10 +84,13 @@ export const SwapCard = ({ initialSlug, liveIndexes }: SwapCardProps) => {
   const [slug, setSlug] = useState(initialSlug);
   const live =
     liveIndexes.find((entry) => entry.label === slug) ?? liveIndexes[0];
-  const { address, hasProvider, isBotChain, connect, switchNetwork } =
+  const { address, hasProvider, isBotChain, connect, switchNetwork, chainId } =
     useWallet();
   const { isLoading } = usePortfolio();
   const actions = useVaultActions();
+  const isTestnet =
+    (chainId ? NETWORKS[chainId] : undefined)?.isTestnet ??
+    NETWORKS[968].isTestnet;
 
   const others = liveIndexes.filter((entry) => entry.label !== live.label);
   const [alternateSlug, setAlternateSlug] = useState(others[0]?.label ?? "");
@@ -355,7 +359,7 @@ export const SwapCard = ({ initialSlug, liveIndexes }: SwapCardProps) => {
           {primary.label}
         </button>
 
-        {address && isBotChain ? (
+        {address && isBotChain && isTestnet ? (
           <div className="flex items-center justify-between gap-4 px-1 text-xs">
             <button
               type="button"

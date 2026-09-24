@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowSquareOutIcon, DropIcon } from "@phosphor-icons/react/dist/ssr";
+import { NETWORKS } from "@/config/contracts";
 import { activeChain, explorerAddress } from "@/lib/chain/chains";
 import { QUOTE, quoteAddress } from "@/lib/chain/quote";
 import { registryAddress } from "@/lib/chain/registry";
@@ -31,12 +32,15 @@ const Caption = ({ children }: { children: string }) => (
  * the sidebar should be able to see the registry link exists at all.
  */
 export const SidebarFooter = () => {
-  const { address, isBotChain } = useWallet();
+  const { address, isBotChain, chainId } = useWallet();
   const actions = useVaultActions();
   const quote = quoteAddress();
   const registry = registryAddress();
+  const currentNetwork =
+    chainId && NETWORKS[chainId] ? NETWORKS[chainId] : NETWORKS[968];
 
   const blocked = (() => {
+    if (!currentNetwork.isTestnet) return "Testnet only";
     if (!quote) return `No test ${QUOTE.ticker} deployed yet`;
     if (!address) return "Connect a wallet first";
     if (!isBotChain) return `Switch to ${activeChain.name}`;
