@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { erc20Abi, maxUint256 } from "viem";
-import { publicClient } from "@/lib/chain/client";
+import { getPublicClient } from "@/lib/chain/client";
 import { quoteAddress } from "@/lib/chain/quote";
 import { indexVaultAbi, mockErc20Abi } from "@/lib/chain/vault";
 import { useWallet } from "./WalletProvider";
@@ -16,7 +16,7 @@ const toMessage = (error: unknown): string => {
 };
 
 export const useVaultActions = () => {
-  const { address, isBotChain, getWalletClient, refresh, switchNetwork } =
+  const { address, isBotChain, chainId, getWalletClient, refresh, switchNetwork } =
     useWallet();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +24,8 @@ export const useVaultActions = () => {
     label: string;
     hash: `0x${string}`;
   } | null>(null);
+
+  const client = getPublicClient(chainId);
 
   const send = useCallback(
     async (label: string, action: () => Promise<`0x${string}`>) => {
@@ -42,7 +44,7 @@ export const useVaultActions = () => {
 
       try {
         const hash = await action();
-        await publicClient.waitForTransactionReceipt({ hash });
+        await client.waitForTransactionReceipt({ hash });
         setLast({ label, hash });
         refresh();
         return hash;
@@ -53,13 +55,13 @@ export const useVaultActions = () => {
         setPending(null);
       }
     },
-    [address, isBotChain, refresh, switchNetwork],
+    [address, isBotChain, refresh, switchNetwork, client],
   );
 
   /** Approves only when the existing allowance is short, so repeat deposits are one transaction. */
   const ensureAllowance = useCallback(
     async (spender: `0x${string}`, amount: bigint) => {
-      const quote = quoteAddress();
+      const quote = quoteAddress(chainId);
       const owner = address as `0x${string}`;
 
       if (!quote) {
@@ -68,7 +70,7 @@ export const useVaultActions = () => {
         );
       }
 
-      const allowance = await publicClient.readContract({
+      const allowance = await client.readContract({
         address: quote,
         abi: erc20Abi,
         functionName: "allowance",
@@ -79,16 +81,16 @@ export const useVaultActions = () => {
         return;
       }
 
-      const client = getWalletClient();
-      const hash = await client.writeContract({
+      const walletClient = getWalletClient();
+      const hash = await walletClient.writeContract({
         address: quote,
         abi: erc20Abi,
         functionName: "approve",
         args: [spender, maxUint256],
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await client.waitForTransactionReceipt({ hash });
     },
-    [address, getWalletClient],
+    [address, chainId, getWalletClient, client],
   );
 
   const deposit = useCallback(
@@ -126,32 +128,32 @@ export const useVaultActions = () => {
   const swap = useCallback(
     (from: `0x${string}`, to: `0x${string}`, shares: bigint) =>
       send("swap", async () => {
-        const quoteAmount = await publicClient.readContract({
+        const quoteAmount = await client.readContract({
           address: from,
           abi: indexVaultAbi,
           functionName: "previewRedeem",
           args: [shares],
         });
 
-        const client = getWalletClient();
-        const redeemHash = await client.writeContract({
+        const walletClient = getWalletClient();
+        const redeemHash = await walletClient.writeContract({
           address: from,
           abi: indexVaultAbi,
           functionName: "redeem",
           args: [shares],
         });
-        await publicClient.waitForTransactionReceipt({ hash: redeemHash });
+        await client.waitForTransactionReceipt({ hash: redeemHash });
 
         await ensureAllowance(to, quoteAmount);
 
-        return client.writeContract({
+        return walletClient.writeContract({
           address: to,
           abi: indexVaultAbi,
           functionName: "deposit",
           args: [quoteAmount],
         });
       }),
-    [ensureAllowance, getWalletClient, send],
+    [ensureAllowance, getWalletClient, send, client],
   );
 
   const faucet = useCallback(

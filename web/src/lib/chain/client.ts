@@ -1,19 +1,30 @@
-import { createPublicClient, http } from "viem";
-import { activeChain } from "./chains";
+import { createPublicClient, http, type PublicClient } from "viem";
+import { getChain } from "./chains";
 
-/** Read client. Server and browser share it; no wallet involved. */
-export const publicClient = createPublicClient({
-  chain: activeChain,
-  transport: http(process.env.NEXT_PUBLIC_RPC_URL),
-});
+const clients = new Map<number, PublicClient>();
+
+export const getPublicClient = (chainId?: number | null): PublicClient => {
+  const chain = getChain(chainId);
+  if (!clients.has(chain.id)) {
+    const client = createPublicClient({
+      chain,
+      transport: http(
+        chain.id === 677
+          ? "https://rpc.botchain.ai"
+          : "https://rpc.bohr.life"
+      ),
+    }) as PublicClient;
+    clients.set(chain.id, client);
+  }
+  return clients.get(chain.id)!;
+};
+
+/** Default read client. */
+export const publicClient = getPublicClient();
 
 /**
  * A read that degrades to a fallback instead of taking the page down, without
  * losing the reason.
- *
- * The silent version of this cost us once already: `multicall` throws outright
- * on a chain with no Multicall3, and a bare `.catch(() => 0n)` turned that into
- * every balance quietly reading zero, with nothing in the console to chase.
  */
 export const readOrFallback = async <T>(
   label: string,

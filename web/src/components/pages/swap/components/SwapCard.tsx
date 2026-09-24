@@ -230,8 +230,8 @@ export const SwapCard = ({ initialSlug, liveIndexes }: SwapCardProps) => {
     }
     if (!isBotChain) {
       return {
-        label: `Switch to ${activeChain.name}`,
-        onClick: switchNetwork,
+        label: `Switch to BOT Chain`,
+        onClick: () => switchNetwork(968),
         disabled: false,
       };
     }

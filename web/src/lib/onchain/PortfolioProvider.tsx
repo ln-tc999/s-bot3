@@ -9,9 +9,9 @@ import {
   useState,
 } from "react";
 import { erc20Abi, formatUnits } from "viem";
-import { publicClient, readOrFallback } from "@/lib/chain/client";
+import { getPublicClient, readOrFallback } from "@/lib/chain/client";
 import { QUOTE, QUOTE_PRICE_USD, quoteAddress } from "@/lib/chain/quote";
-import type { LiveIndex } from "@/lib/chain/registry";
+import { fetchIndexes, type LiveIndex } from "@/lib/chain/registry";
 import { indexVaultAbi, SHARE_DECIMALS } from "@/lib/chain/vault";
 import type { PortfolioPosition } from "@/lib/portfolio";
 import { useWallet } from "./WalletProvider";
@@ -52,14 +52,31 @@ interface PortfolioProviderProps {
 }
 
 export const PortfolioProvider = ({
-  liveIndexes,
+  liveIndexes: initialLiveIndexes,
   children,
 }: PortfolioProviderProps) => {
-  const { address, epoch } = useWallet();
+  const { address, epoch, chainId } = useWallet();
+  const [liveIndexes, setLiveIndexes] = useState<LiveIndex[]>(initialLiveIndexes);
   const [shares, setShares] = useState<Record<string, bigint>>({});
   const [sharePrices, setSharePrices] = useState<Record<string, bigint>>({});
   const [quoteBalance, setQuoteBalance] = useState(0n);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Re-fetch indexes whenever chainId changes or epoch updates
+  useEffect(() => {
+    let cancelled = false;
+    fetchIndexes(chainId)
+      .then((indexes) => {
+        if (!cancelled && indexes.length > 0) {
+          setLiveIndexes(indexes);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chainId, epoch]);
 
   /**
    * Flattened to a string so the effect depends on the vault list's contents
@@ -71,7 +88,8 @@ export const PortfolioProvider = ({
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: epoch is the refetch trigger a write bumps, not a value this effect reads
   useEffect(() => {
-    const quote = quoteAddress();
+    const quote = quoteAddress(chainId);
+    const client = getPublicClient(chainId);
 
     if (!vaultKey && !quote) {
       return;
@@ -87,18 +105,10 @@ export const PortfolioProvider = ({
     let cancelled = false;
     setIsLoading(true);
 
-    /**
-     * Individual reads rather than one multicall. Multicall3 is not deployed at
-     * the canonical address on BOT Chain testnet, and viem refuses outright
-     * ("Chain does not support contract multicall3") — which the catch below
-     * would have swallowed, leaving every balance and price silently at zero.
-     * An index list is a handful of entries, so the extra round trips are
-     * cheaper than a dependency on a helper contract that may not be there.
-     */
     const sharePrice = (vault: `0x${string}`) =>
       readOrFallback(
         `sharePrice(${vault})`,
-        publicClient.readContract({
+        client.readContract({
           address: vault,
           abi: indexVaultAbi,
           functionName: "sharePrice",
@@ -109,7 +119,7 @@ export const PortfolioProvider = ({
     const balanceOf = (token: `0x${string}`, owner: `0x${string}`) =>
       readOrFallback(
         `balanceOf(${token})`,
-        publicClient.readContract({
+        client.readContract({
           address: token,
           abi: erc20Abi,
           functionName: "balanceOf",
@@ -155,7 +165,7 @@ export const PortfolioProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [address, epoch, vaultKey]);
+  }, [address, epoch, vaultKey, chainId]);
 
   const value = useMemo<PortfolioContextValue>(() => {
     const positions = liveIndexes.flatMap((entry) => {

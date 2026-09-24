@@ -18,9 +18,8 @@ import {
   type Transport,
   type WalletClient,
 } from "viem";
-import { activeChain } from "@/lib/chain/chains";
+import { getChain, isBotChainId } from "@/lib/chain/chains";
 import {
-  CHAIN_ID,
   discoverWallets,
   type Eip1193Provider,
   getInjectedProvider,
@@ -41,7 +40,7 @@ interface WalletContextValue {
   epoch: number;
   connect: (rdns?: string) => Promise<void>;
   disconnect: () => Promise<void>;
-  switchNetwork: () => Promise<void>;
+  switchNetwork: (targetChainId?: number) => Promise<void>;
   refresh: () => void;
   getWalletClient: () => WalletClient<Transport, Chain, Account>;
 }
@@ -241,7 +240,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       .catch(() => undefined);
   }, [getProvider, refresh]);
 
-  const switchNetwork = useCallback(async () => {
+  const switchNetwork = useCallback(async (targetChainId: number = 968) => {
     const provider = getProvider();
     if (!provider) {
       return;
@@ -250,7 +249,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
 
     try {
-      await requestBotChain(provider);
+      await requestBotChain(provider, targetChainId);
       await readChainId(provider);
     } catch (cause) {
       setError(toMessage(cause));
@@ -270,16 +269,16 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
 
     return createWalletClient({
       account: address,
-      chain: activeChain,
+      chain: getChain(chainId),
       transport: custom(provider),
     });
-  }, [address, getProvider]);
+  }, [address, chainId, getProvider]);
 
   const value = useMemo<WalletContextValue>(
     () => ({
       address,
       chainId,
-      isBotChain: chainId === CHAIN_ID,
+      isBotChain: isBotChainId(chainId),
       isConnecting,
       hasProvider: hasLegacy || wallets.length > 0,
       error,

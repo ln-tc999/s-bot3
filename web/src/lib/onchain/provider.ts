@@ -1,4 +1,4 @@
-import { activeChain } from "@/lib/chain/chains";
+import { getChain, isBotChainId } from "@/lib/chain/chains";
 
 export interface Eip1193Provider {
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
@@ -20,15 +20,11 @@ export interface WalletDetail {
   provider: Eip1193Provider;
 }
 
-export const CHAIN_ID = activeChain.id;
+/** Legacy default */
+export const CHAIN_ID = 968;
 
 /**
  * The legacy injected wallet, or undefined.
- *
- * Kept as a fallback, not as the main path: `window.ethereum` holds whichever
- * extension won the race to inject, so on a machine with two wallets installed
- * it is a coin toss which one answers. EIP-6963 below is how each wallet
- * announces itself separately.
  */
 export const getInjectedProvider = (): Eip1193Provider | undefined =>
   (globalThis as { ethereum?: Eip1193Provider }).ethereum;
@@ -36,11 +32,6 @@ export const getInjectedProvider = (): Eip1193Provider | undefined =>
 const ANNOUNCE = "eip6963:announceProvider";
 const REQUEST = "eip6963:requestProvider";
 
-/**
- * Asks every installed wallet to announce itself, and keeps listening: wallets
- * may answer late, and an extension enabled after page load announces without
- * being asked again. Returns the unsubscribe.
- */
 export const discoverWallets = (
   onAnnounce: (detail: WalletDetail) => void,
 ): (() => void) => {
@@ -67,19 +58,18 @@ const toHexChainId = (id: number): `0x${string}` => `0x${id.toString(16)}`;
 const CHAIN_NOT_ADDED = 4902;
 
 /**
- * Move the wallet to BOT Chain, adding the network if it has never seen it.
- *
- * Nobody arrives with BOT Chain already configured, so the add path is the
- * normal path, not the edge case — a visitor who has to leave and configure a
- * network by hand is a visitor who never comes back. MetaMask reports the
- * unknown chain as 4902, but some wallets bury the same condition inside
- * -32603, so both are treated as "offer to add it".
+ * Move the wallet to BOT Chain (Testnet 968 or Mainnet 677).
  */
-export const requestBotChain = async (provider: Eip1193Provider) => {
+export const requestBotChain = async (
+  provider: Eip1193Provider,
+  targetChainId: number = 968,
+) => {
+  const chain = getChain(targetChainId);
+
   try {
     await provider.request({
       method: "wallet_switchEthereumChain",
-      params: [{ chainId: toHexChainId(CHAIN_ID) }],
+      params: [{ chainId: toHexChainId(chain.id) }],
     });
   } catch (error) {
     const code = (error as { code?: number }).code;
@@ -92,11 +82,11 @@ export const requestBotChain = async (provider: Eip1193Provider) => {
       method: "wallet_addEthereumChain",
       params: [
         {
-          chainId: toHexChainId(CHAIN_ID),
-          chainName: activeChain.name,
-          nativeCurrency: activeChain.nativeCurrency,
-          rpcUrls: [activeChain.rpcUrls.default.http[0]],
-          blockExplorerUrls: [activeChain.blockExplorers.default.url],
+          chainId: toHexChainId(chain.id),
+          chainName: chain.name,
+          nativeCurrency: chain.nativeCurrency,
+          rpcUrls: [chain.rpcUrls.default.http[0]],
+          blockExplorerUrls: [chain.blockExplorers.default.url],
         },
       ],
     });

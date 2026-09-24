@@ -153,7 +153,7 @@ export const PortfolioSplit = ({
         </div>
       </div>
 
-      <div className="relative isolate min-h-56 flex-1">
+      <div className="relative isolate min-h-[420px] flex-1">
         <Image
           src="/assets/cat-ui-bg-2.jpg"
           alt=""

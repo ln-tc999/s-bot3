@@ -12,21 +12,24 @@ import { registryAddress } from "@/lib/chain/registry";
 import { cn } from "@/lib/cn";
 import { useVaultActions } from "@/lib/onchain/useVaultActions";
 import { useWallet } from "@/lib/onchain/WalletProvider";
+import { NETWORKS } from "@/config/contracts";
 
 export const Sidebar = () => {
   const pathname = usePathname();
-  const { address, isBotChain } = useWallet();
+  const { address, isBotChain, chainId } = useWallet();
   const actions = useVaultActions();
-  const quote = quoteAddress();
-  const registry = registryAddress();
+  const quote = quoteAddress(chainId);
+  const registry = registryAddress(chainId);
+  const currentNetwork = chainId && NETWORKS[chainId] ? NETWORKS[chainId] : NETWORKS[968];
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
 
   const faucetBlocked = (() => {
+    if (!currentNetwork.isTestnet) return "Faucet only available on Testnet";
     if (!quote) return `No test ${QUOTE.ticker} deployed yet`;
     if (!address) return "Connect a wallet first";
-    if (!isBotChain) return "Switch to BOT Chain";
+    if (!isBotChain) return "Switch to BOT Chain Testnet";
     return null;
   })();
 

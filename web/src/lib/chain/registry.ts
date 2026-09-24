@@ -1,15 +1,11 @@
+import { getNetworkConfig } from "@/config/contracts";
 import { findToken } from "@/lib/tokens/registry";
 import type { Constituent } from "@/types/index-fund";
 import { sbot3RegistryAbi } from "./abi";
-import { publicClient, readOrFallback } from "./client";
+import { getPublicClient, readOrFallback } from "./client";
 
-/**
- * Where the registry lives. Read on call rather than at module load so a build
- * that runs before deployment reads as "nothing published yet" instead of
- * freezing `undefined` into the bundle.
- */
-export const registryAddress = (): `0x${string}` | undefined =>
-  process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as `0x${string}` | undefined;
+export const registryAddress = (chainId?: number | null): `0x${string}` | undefined =>
+  getNetworkConfig(chainId).registryAddress;
 
 const ZERO = "0x0000000000000000000000000000000000000000";
 
@@ -56,8 +52,10 @@ const toConstituents = (
     } as Constituent;
   });
 
-export const fetchIndex = async (label: string): Promise<LiveIndex | null> => {
-  const address = registryAddress();
+export const fetchIndex = async (label: string, chainId?: number | null): Promise<LiveIndex | null> => {
+  const address = registryAddress(chainId);
+  const client = getPublicClient(chainId);
+
   if (!address) {
     return null;
   }
@@ -73,7 +71,7 @@ export const fetchIndex = async (label: string): Promise<LiveIndex | null> => {
       methodology,
       symbols,
       weights,
-    ] = await publicClient.readContract({
+    ] = await client.readContract({
       address,
       abi: sbot3RegistryAbi,
       functionName: "getIndex",
@@ -109,15 +107,17 @@ export const fetchIndex = async (label: string): Promise<LiveIndex | null> => {
  * scan — the contract keeps the list because listing is part of the product,
  * not an afterthought bolted on with logs.
  */
-export const fetchIndexes = async (): Promise<LiveIndex[]> => {
-  const address = registryAddress();
+export const fetchIndexes = async (chainId?: number | null): Promise<LiveIndex[]> => {
+  const address = registryAddress(chainId);
+  const client = getPublicClient(chainId);
+
   if (!address) {
     return [];
   }
 
   const labels = await readOrFallback(
     "allLabels",
-    publicClient.readContract({
+    client.readContract({
       address,
       abi: sbot3RegistryAbi,
       functionName: "allLabels",
@@ -125,7 +125,9 @@ export const fetchIndexes = async (): Promise<LiveIndex[]> => {
     [] as readonly string[],
   );
 
-  const indexes = await Promise.all(labels.map(fetchIndex));
+  const indexes = await Promise.all(
+    labels.map((label) => fetchIndex(label, chainId))
+  );
 
   return indexes.filter((index): index is LiveIndex => index !== null);
 };

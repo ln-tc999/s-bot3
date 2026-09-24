@@ -1,8 +1,7 @@
+import { getNetworkConfig } from "@/config/contracts";
+
 /**
- * Settlement is single asset. An earlier iteration let a deposit be paid in any
- * of four tokens because four were deployed; here there is one mock dollar and
- * every vault settles in it, so the whole quote-selection surface collapses
- * into this file.
+ * Settlement is single asset.
  */
 export const QUOTE = {
   symbol: "musdc",
@@ -18,5 +17,5 @@ export const QUOTE = {
  */
 export const QUOTE_PRICE_USD = 1;
 
-export const quoteAddress = (): `0x${string}` | undefined =>
-  process.env.NEXT_PUBLIC_QUOTE_ADDRESS as `0x${string}` | undefined;
+export const quoteAddress = (chainId?: number | null): `0x${string}` | undefined =>
+  getNetworkConfig(chainId).quoteAddress;
