@@ -27,6 +27,12 @@ export async function generateMetadata({
       title: index.name,
       description: index.methodology || undefined,
     },
+    /** The card is 1200x630, so ask for the wide treatment rather than a thumbnail. */
+    twitter: {
+      card: "summary_large_image",
+      title: index.name,
+      description: index.methodology || undefined,
+    },
   };
 }
 

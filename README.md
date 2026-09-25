@@ -126,6 +126,12 @@ the fee charged on both sides.
    about, and the trade panel offers the same for whatever a particular basket
    is short of.
 
+Every index page has a **Share** button. The card it shows is the page's own
+Open Graph image, so pasting the link anywhere that unfurls links renders the
+composition without anyone downloading anything — and the same image is what the
+Download button saves. Nothing on it is asserted by the app; every field is read
+from the contract.
+
 You need a little BOT for gas. On testnet, take it from
 [faucet.botchain.ai/basic](https://faucet.botchain.ai/basic).
 

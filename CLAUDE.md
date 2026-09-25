@@ -128,6 +128,13 @@ are in `components/ui/`.
 `/trade/[slug]` is settlement — subscribe/redeem, NAV, drift. They link to each
 other rather than merging.
 
+`indexes/[slug]/opengraph-image.tsx` is both the link preview and the share
+card, drawn with `next/og` (no dependency). Next appends a content hash to that
+route, so its URL cannot be composed from the slug — `ShareCard` reads it off
+the `og:image` meta tag, which is also what keeps the preview, the download and
+the unfurl identical. Satori supports flexbox only, and any element with more
+than one child needs `display: flex` spelled out.
+
 Pages stay server components; `"use client"` sits on the leaves that need a wallet
 or interaction.
 

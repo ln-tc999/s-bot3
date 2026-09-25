@@ -8,6 +8,7 @@ import type { LiveIndex } from "@/lib/chain/registry";
 import { ConstituentTable } from "./components/ConstituentTable";
 import { OnchainPanel } from "./components/OnchainPanel";
 import { RebalancerCard } from "./components/RebalancerCard";
+import { ShareCard } from "./components/ShareCard";
 import { ShareTokenCard } from "./components/ShareTokenCard";
 
 interface IndexDetailPageProps {
@@ -51,6 +52,8 @@ export const IndexDetailPage = ({ index }: IndexDetailPageProps) => (
           </p>
         </div>
       </div>
+
+      <ShareCard name={index.name} label={index.label} />
     </header>
 
     {index.methodology ? (
