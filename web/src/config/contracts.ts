@@ -24,8 +24,17 @@ export const NETWORKS: Record<number, NetworkInfo> = {
     shortName: "Testnet 968",
     rpcUrl: "https://rpc.bohr.life",
     explorerUrl: "https://scan.bohr.life",
-    registryAddress: (process.env.NEXT_PUBLIC_REGISTRY_ADDRESS ||
-      "0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf") as `0x${string}`,
+    /**
+     * No hardcoded default any more. The address that used to sit here was the
+     * registry deployed before settlement moved in kind, and `getIndex` kept the
+     * same shape across that change — so an unconfigured build read indexes off
+     * it happily and then showed a NAV of $0.00 and 0.00% drift, because
+     * `navPerShare` and `driftBps` do not exist there and the fallback reads as
+     * data. Undefined says "not deployed yet", which is the truth.
+     */
+    registryAddress: process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as
+      | `0x${string}`
+      | undefined,
     tokenBookAddress: process.env.NEXT_PUBLIC_TOKENBOOK_ADDRESS as
       | `0x${string}`
       | undefined,
