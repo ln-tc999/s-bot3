@@ -111,9 +111,9 @@ the fee charged on both sides.
 1. Open the site and click **Connect**. If your wallet has never seen BOT Chain,
    the app offers to add it for you — you do not have to configure anything by hand.
 2. Go to **Create**. Name the index, write what it tracks, pick up to sixteen
-   tokens and set their weights. Past eight the form says so — settling in kind
-   costs the subscriber one approval per constituent. They have to total 100.00%, and the contract
-   enforces that.
+   tokens and set their weights. They have to total 100.00%, and the contract
+   enforces that. Past eight the form says so, because settling in kind costs
+   the subscriber one approval per constituent.
 3. Press **Publish index** and sign one transaction. You now own it.
 4. On the index page, press **Lock it** to freeze the methodology forever, or
    paste an address under **Rebalancer** to delegate the weight key.
@@ -121,8 +121,10 @@ the fee charged on both sides.
    Declare a unit price per constituent, a seed NAV, the fee and your slice of
    it, then two signatures: one deploys, one attaches. Every one of those is
    immutable afterwards.
-6. Anyone can now open **Trade**, claim the test tokens they are short of, and
-   subscribe or redeem against the index.
+6. Anyone can now open **Trade** and subscribe or redeem against the index. On
+   testnet the drop icon in the sidebar claims every constituent the book knows
+   about, and the trade panel offers the same for whatever a particular basket
+   is short of.
 
 You need a little BOT for gas. On testnet, take it from
 [faucet.botchain.ai/basic](https://faucet.botchain.ai/basic).
@@ -152,10 +154,14 @@ twice is harmless.
 
 **[s-bot3.vercel.app](https://s-bot3.vercel.app)**
 
-The site supports **both networks in one deployment**. A network switcher in
-the header lets you flip between BOT Chain Testnet and BOT Chain Mainnet —
-the wallet switches chains, and balances, index data, and explorer links
-reload from the selected network automatically.
+One deployment serves both networks. The switcher in the header moves the
+wallet between them, and balances, index data and explorer links all reload
+from whichever is selected.
+
+Testnet is live. Mainnet only appears in the switcher once
+`NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS` and `NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS`
+are set, which is deliberate — an option that cannot settle anything is worse
+than no option.
 
 ## Deployment
 
