@@ -127,6 +127,27 @@ the fee charged on both sides.
 You need a little BOT for gas. On testnet, take it from
 [faucet.botchain.ai/basic](https://faucet.botchain.ai/basic).
 
+### Running the agent
+
+Delegation is the claim worth seeing exercised, so it has a script rather than
+only a field in the UI:
+
+```bash
+cd web
+PRIVATE_KEY=0x… pnpm agent two-majors equal      # or 8000,2000
+PRIVATE_KEY=0x… pnpm agent two-majors equal --dry # print the plan, sign nothing
+```
+
+It refuses to sign as anything but the owner or the delegated agent, prints the
+weights before and after, and — once a vault is attached — the drift the
+rebalance just opened. What makes it safe is not the script: `setWeights` is the
+only function the registry will accept an agent on, so the same key run against
+`lock`, `delegate`, `setMethodology` or `setVault` is refused by the contract.
+
+There is also `pnpm seed`, which publishes a spread of indexes so a freshly
+deployed registry has something to read. It checks `exists` first, so running it
+twice is harmless.
+
 ## Live
 
 **[s-bot3.vercel.app](https://s-bot3.vercel.app)**

@@ -13,6 +13,8 @@ pnpm lint                 # biome check (lint + format check + import order)
 pnpm format               # biome format --write — NOTE: formats the whole tree
 pnpm check:assets         # fails if a /public path referenced in src/ does not exist
 pnpm check:wallet         # asserts pickWallet's precedence (announced beats injected)
+pnpm agent <label> <plan> # the delegated rebalancer; --dry prints without signing
+pnpm seed                 # publish a spread of indexes into a fresh registry
 pnpm contracts:build      # forge build --root ../contracts
 pnpm contracts:check      # forge test --root ../contracts
 ```
@@ -37,7 +39,9 @@ everything it deploys internally, so they are already split for that reason and
 a contract that is too large to deploy.
 
 Contracts are deployed by hand (Remix or `forge create`), never from a script in
-this repo. See DEPLOY.md.
+this repo. See DEPLOY.md. `scripts/agent.ts` and `scripts/seed-indexes.ts` are
+not deploy scripts — they call the registry, take `PRIVATE_KEY` from the
+environment, and both support `--dry`, which reads and prints without signing.
 
 ## Architecture
 

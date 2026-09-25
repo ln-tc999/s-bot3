@@ -11,7 +11,9 @@
     "contracts:build": "forge build --root ../contracts",
     "contracts:check": "forge test --root ../contracts",
     "check:assets": "node scripts/check-assets.mjs",
-    "check:wallet": "tsx src/lib/onchain/provider.check.ts"
+    "check:wallet": "tsx src/lib/onchain/provider.check.ts",
+    "agent": "tsx --env-file=.env.local scripts/agent.ts",
+    "seed": "tsx --env-file=.env.local scripts/seed-indexes.ts"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.81",

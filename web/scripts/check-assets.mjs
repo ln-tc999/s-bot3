@@ -16,7 +16,9 @@ const missing = [];
 
 for (const file of walk("src").filter((f) => /\.tsx?$/.test(f))) {
   const source = readFileSync(file, "utf8");
-  for (const [, asset] of source.matchAll(/["'`](\/(?:assets|tokens)\/[^"'`${}]+)["'`]/g)) {
+  for (const [, asset] of source.matchAll(
+    /["'`](\/(?:assets|tokens)\/[^"'`${}]+)["'`]/g,
+  )) {
     try {
       statSync(join("public", asset));
     } catch {
