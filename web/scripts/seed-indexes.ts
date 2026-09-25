@@ -130,7 +130,7 @@ const SEEDS: Seed[] = [
   },
 ];
 
-const die = (message: string): never => {
+const die: (message: string) => never = (message) => {
   console.error(`✗ ${message}`);
   process.exit(1);
 };

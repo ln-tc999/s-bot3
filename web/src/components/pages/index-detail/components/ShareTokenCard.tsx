@@ -20,8 +20,12 @@ import {
   MAX_FEE_BPS,
   UNIT_DECIMALS,
 } from "@/lib/chain/unit";
-import { indexVaultAbi, indexVaultBytecode } from "@/lib/chain/vault";
-import { formatBps, truncateAddress } from "@/lib/format";
+import {
+  indexVaultAbi,
+  indexVaultBytecode,
+  TOTAL_BPS,
+} from "@/lib/chain/vault";
+import { formatAmount, formatBps, truncateAddress } from "@/lib/format";
 import { useWallet } from "@/lib/onchain/WalletProvider";
 import type { Constituent } from "@/types/index-fund";
 
@@ -57,6 +61,27 @@ export const ShareTokenCard = ({
 
   const isOwner = address?.toLowerCase() === owner.toLowerCase();
   const book = tokenBookAddress();
+
+  /**
+   * What one share would ask for, per constituent, at the prices typed so far.
+   *
+   * The prices are immutable once deployed, and an inverted one — a token priced
+   * at 0.001 when it is worth a thousand — produces a vault nobody can ever
+   * subscribe to, because a single share would demand tens of thousands of
+   * tokens. The arithmetic is trivial and the mistake is not recoverable, so it
+   * is shown rather than explained.
+   */
+  const perShare = (entry: Constituent): string => {
+    const price = Number(prices[entry.token.symbol]);
+    const nav = Number(seed);
+
+    if (!(price > 0) || !(nav > 0)) {
+      return "";
+    }
+
+    const quantity = (nav * (entry.weightBps / TOTAL_BPS)) / price;
+    return `${formatAmount(quantity)} / share`;
+  };
 
   /** Read back as percentages, so the split is legible before it is permanent. */
   const feeSplit = (() => {
@@ -222,7 +247,13 @@ export const ShareTokenCard = ({
           <>
             <div className="space-y-2">
               <p className="text-xs font-medium text-ink-subtle">
-                Unit price per token
+                Unit price per whole token
+              </p>
+              <p className="text-[11px] leading-relaxed text-ink-subtle">
+                In the same unit as the seed NAV below — so if a share is worth
+                100, a token worth about a tenth of that is 10, not 0.1. Each
+                row shows what one share would then ask a subscriber to deliver;
+                if that number looks absurd, the price is inverted.
               </p>
               {constituents.map((entry) => (
                 <label
@@ -245,6 +276,9 @@ export const ShareTokenCard = ({
                     placeholder="0.00"
                     className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 py-2 text-sm tabular-nums text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                   />
+                  <span className="w-28 shrink-0 text-right font-mono text-[11px] tabular-nums text-ink-subtle">
+                    {perShare(entry)}
+                  </span>
                 </label>
               ))}
             </div>

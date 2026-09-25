@@ -19,7 +19,7 @@ import { indexVaultAbi } from "../src/lib/chain/vault";
 const TOTAL_BPS = 10_000;
 const ZERO = "0x0000000000000000000000000000000000000000";
 
-const die = (message: string): never => {
+const die: (message: string) => never = (message) => {
   console.error(`✗ ${message}`);
   process.exit(1);
 };
