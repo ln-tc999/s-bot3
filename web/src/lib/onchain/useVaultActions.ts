@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { erc20Abi, maxUint256 } from "viem";
-import { publicClient } from "@/lib/chain/client";
+import { getPublicClient } from "@/lib/chain/client";
 import { indexVaultAbi, mockErc20Abi } from "@/lib/chain/vault";
 import { useWallet } from "./WalletProvider";
 
@@ -15,14 +15,23 @@ const toMessage = (error: unknown): string => {
 };
 
 export const useVaultActions = () => {
-  const { address, isBotChain, getWalletClient, refresh, switchNetwork } =
-    useWallet();
+  const {
+    address,
+    isBotChain,
+    chainId,
+    getWalletClient,
+    refresh,
+    switchNetwork,
+  } = useWallet();
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<{
     label: string;
     hash: `0x${string}`;
   } | null>(null);
+
+  /** Reads go to whichever BOT chain the wallet is on, not a build-time one. */
+  const client = getPublicClient(chainId);
 
   const send = useCallback(
     async (label: string, action: () => Promise<`0x${string}`>) => {
@@ -41,7 +50,7 @@ export const useVaultActions = () => {
 
       try {
         const hash = await action();
-        await publicClient.waitForTransactionReceipt({ hash });
+        await client.waitForTransactionReceipt({ hash });
         setLast({ label, hash });
         refresh();
         return hash;
@@ -52,7 +61,7 @@ export const useVaultActions = () => {
         setPending(null);
       }
     },
-    [address, isBotChain, refresh, switchNetwork],
+    [address, client, isBotChain, refresh, switchNetwork],
   );
 
   /**
@@ -67,7 +76,7 @@ export const useVaultActions = () => {
 
       const owner = address as `0x${string}`;
 
-      const allowance = await publicClient.readContract({
+      const allowance = await client.readContract({
         address: token,
         abi: erc20Abi,
         functionName: "allowance",
@@ -84,9 +93,9 @@ export const useVaultActions = () => {
         functionName: "approve",
         args: [spender, maxUint256],
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await client.waitForTransactionReceipt({ hash });
     },
-    [address, getWalletClient],
+    [address, client, getWalletClient],
   );
 
   /**
@@ -135,21 +144,22 @@ export const useVaultActions = () => {
    * Fund a wallet with the constituents it is short of.
    *
    * Each `faucet()` mints one fixed claim, so a large subscription can need
-   * several rounds — the caller decides how many by what it passes in.
+   * several rounds — the caller decides how many by what it passes in. Only a
+   * MockERC20 has one, so callers gate this on the network being a testnet.
    */
   const faucet = useCallback(
     (tokens: readonly `0x${string}`[]) =>
       send("faucet", async () => {
-        const client = getWalletClient();
+        const wallet = getWalletClient();
         let last: `0x${string}` | undefined;
 
         for (const token of tokens) {
-          last = await client.writeContract({
+          last = await wallet.writeContract({
             address: token,
             abi: mockErc20Abi,
             functionName: "faucet",
           });
-          await publicClient.waitForTransactionReceipt({ hash: last });
+          await client.waitForTransactionReceipt({ hash: last });
         }
 
         if (!last) {
@@ -158,7 +168,7 @@ export const useVaultActions = () => {
 
         return last;
       }),
-    [getWalletClient, send],
+    [client, getWalletClient, send],
   );
 
   /** Clearing the result is what closes the success dialog. */

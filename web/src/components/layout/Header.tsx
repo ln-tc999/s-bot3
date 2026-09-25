@@ -6,11 +6,11 @@ import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/format";
 import { useWallet } from "@/lib/onchain/WalletProvider";
 import { BAR_ICON, GLASS, PILL } from "./chrome";
+import { NetworkSwitcher } from "./NetworkSwitcher";
 
 /**
  * One row per wallet that announced itself over EIP-6963. Shown only when more
- * than one is installed — with a single wallet the picker would be a click
- * between the visitor and the thing they already meant to do.
+ * than one is installed.
  */
 const WalletPicker = ({
   onPick,
@@ -23,7 +23,6 @@ const WalletPicker = ({
 
   return (
     <>
-      {/* A backdrop is how this closes on an outside click, with no document listener. */}
       <button
         type="button"
         aria-label="Close wallet picker"
@@ -110,11 +109,11 @@ const WalletControl = () => {
     return (
       <button
         type="button"
-        onClick={switchNetwork}
+        onClick={() => switchNetwork(968)}
         className="flex h-[42px] min-w-0 items-center gap-1.5 rounded-[8px] bg-negative px-3 text-sm font-medium text-ink-inverse transition-opacity duration-150 ease-out hover:opacity-90"
       >
         <WarningIcon size={14} weight="fill" aria-hidden className="shrink-0" />
-        <span className="truncate">Switch network</span>
+        <span className="truncate">Switch to Testnet</span>
       </button>
     );
   }
@@ -138,14 +137,9 @@ const WalletControl = () => {
   );
 };
 
-/**
- * The wallet and nothing else, with no panel behind it. It stays sticky so the
- * control never scrolls out of reach, which means page content passes under it:
- * the disconnected state carries its own solid fill, so it stays legible either
- * way.
- */
 export const Header = () => (
-  <header className="sticky top-3 z-30 flex justify-end px-4 pt-1 lg:top-4 lg:px-8">
+  <header className="sticky top-3 z-30 flex items-center justify-end gap-3 px-4 pt-1 lg:top-4 lg:px-8">
+    <NetworkSwitcher />
     <WalletControl />
   </header>
 );

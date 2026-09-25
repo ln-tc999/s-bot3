@@ -1,9 +1,11 @@
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { sumLiquidity } from "@/lib/chain/liquidity";
 import { fetchIndexes, type LiveIndex } from "@/lib/chain/registry";
 import { CollectionTile } from "./components/CollectionTile";
 import { IndexTable } from "./components/IndexTable";
+import { LiquidityTile } from "./components/LiquidityTile";
 
 const ALL_ID = "all";
 
@@ -24,11 +26,6 @@ const FACETS: Facet[] = [
     title: "Locked methodology",
     matches: (index) => index.isLocked,
   },
-  {
-    id: "delegated",
-    title: "Agent delegated",
-    matches: (index) => index.agent !== null,
-  },
 ];
 
 interface ExplorePageProps {
@@ -37,6 +34,10 @@ interface ExplorePageProps {
 
 export const ExplorePage = async ({ collection }: ExplorePageProps) => {
   const indexes = await fetchIndexes().catch(() => []);
+  const liquidity = await sumLiquidity(indexes).catch(() => ({
+    totalUsd: 0,
+    vaultCount: 0,
+  }));
 
   const activeId = FACETS.some((facet) => facet.id === collection)
     ? (collection as string)
@@ -68,6 +69,10 @@ export const ExplorePage = async ({ collection }: ExplorePageProps) => {
             isActive={facet.id === activeId}
           />
         ))}
+        <LiquidityTile
+          totalUsd={liquidity.totalUsd}
+          vaultCount={liquidity.vaultCount}
+        />
       </div>
 
       <Card className="overflow-hidden">

@@ -19,10 +19,9 @@ pnpm contracts:check      # forge test --root ../contracts
 Foundry lives outside the web project; `export PATH="$HOME/.foundry/bin:$PATH"` if `forge` is not found.
 
 `pnpm format` rewrites every file it can, not just the ones you touched. Prefer
-`pnpm exec biome check --write <path>` scoped to your own changes. A few
-pre-existing files (`neon-dither.tsx`, `demo-neon-dither.tsx`,
-`explore/components/IndexTable.tsx`) fail `pnpm lint` on `main`; leave them be
-unless that is the task.
+`pnpm exec biome check --write <path>` scoped to your own changes.
+`neon-dither.tsx` fails `pnpm lint` on `main`; leave it be unless that is the
+task.
 
 The two tests in `contracts/test/SBot3Registry.t.sol` just call
 `SBot3RegistryCheck.check()` and `IndexVaultCheck.check()`. Run one with
@@ -80,11 +79,27 @@ and hands them to `PortfolioProvider`, which layers per-wallet balances and each
 vault's `navPerShare` on top client-side. `WalletProvider` wraps everything.
 
 `lib/chain/` is read-only and server-safe: `chains.ts` (the two BOT chains +
-`activeChain` from `NEXT_PUBLIC_CHAIN_ID`), `client.ts` (`publicClient`,
+`getChain`), `client.ts` (`getPublicClient`, one memoised client per chain, plus
 `readOrFallback`), `registry.ts` (`LiveIndex`, the one shape the whole UI renders
 from), `tokenbook.ts` (symbol → token, plus `fetchBasketTokens`), `vault.read.ts`
-(NAV, drift, holdings), `abi.ts` / `vault.ts` (generated), `unit.ts` (the 18
-decimal unit of account and the defaults the deploy form offers).
+(NAV, drift, holdings), `liquidity.ts` (every vault's `totalNotional`, summed for
+the explore tile), `abi.ts` / `vault.ts` (generated), `unit.ts` (the 18 decimal
+unit of account and the defaults the deploy form offers).
+
+### The chain is chosen at runtime
+
+There is a network switcher in the header, so the chain is **not** fixed at build
+time. `config/contracts.ts` holds each network's `registryAddress` and
+`tokenBookAddress` — testnet's are hardcoded defaults, mainnet's come from
+`NEXT_PUBLIC_MAINNET_*`. Anything reading a contract takes an optional `chainId`
+and passes it to `getPublicClient` / `registryAddress` / `tokenBookAddress`.
+
+Server components render against the default chain and do not know the wallet's;
+`PortfolioProvider` refetches the index list client-side whenever `chainId`
+changes, which is what makes switching work. `activeChain` still exists as the
+default-chain fallback. `NEXT_PUBLIC_RPC_URL` overrides the RPC for the
+configured chain only, so pointing a local run at anvil does not redirect the
+other network to it too.
 
 `lib/onchain/` is all writes and all wallet state, every file `"use client"`:
 `provider.ts` is a hand-rolled EIP-6963 discovery + BOT Chain add/switch,

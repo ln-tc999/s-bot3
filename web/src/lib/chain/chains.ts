@@ -25,25 +25,35 @@ export const botMainnet = defineChain({
   },
 });
 
-const CHAINS = { 968: botTestnet, 677: botMainnet } as const;
+export const CHAINS = { 968: botTestnet, 677: botMainnet } as const;
 
 export type BotChainId = keyof typeof CHAINS;
 
-const isBotChainId = (id: number): id is BotChainId => id in CHAINS;
+export const isBotChainId = (id: number | null | undefined): id is BotChainId =>
+  id != null && id in CHAINS;
 
-/**
- * Which chain this deployment talks to. Set `NEXT_PUBLIC_CHAIN_ID=677` on the
- * production host and leave it unset locally. Inlined by Next at build time, so
- * it cannot be changed without a rebuild — which is the point: the deployed
- * site should never be ambiguous about the chain it settles on.
- */
-export const activeChain = (() => {
+export const getChain = (chainId?: number | null) => {
+  if (chainId && isBotChainId(chainId)) {
+    return CHAINS[chainId];
+  }
   const raw = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 968);
   return isBotChainId(raw) ? CHAINS[raw] : botTestnet;
-})();
+};
 
-export const explorerTx = (hash: string): string =>
-  `${activeChain.blockExplorers.default.url}/tx/${hash}`;
+/**
+ * Active chain fallback
+ */
+export const activeChain = getChain();
 
-export const explorerAddress = (address: string): string =>
-  `${activeChain.blockExplorers.default.url}/address/${address}`;
+export const explorerTx = (hash: string, chainId?: number | null): string => {
+  const chain = getChain(chainId);
+  return `${chain.blockExplorers.default.url}/tx/${hash}`;
+};
+
+export const explorerAddress = (
+  address: string,
+  chainId?: number | null,
+): string => {
+  const chain = getChain(chainId);
+  return `${chain.blockExplorers.default.url}/address/${address}`;
+};

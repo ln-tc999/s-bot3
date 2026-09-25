@@ -196,8 +196,15 @@ Identical, with three differences:
   testnet. Take BOT from the organizer, or swap on
   [dex.botchain.ai](https://dex.botchain.ai/#/swap).
 
-Set `NEXT_PUBLIC_CHAIN_ID=677` on the production host along with the mainnet
-addresses. Then fill both rows of the Deployment table in
+Set the mainnet addresses on the production host — no rebuild needed, the
+network switcher in the header picks them up at runtime:
+
+```bash
+NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...   # from step 2
+NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS=0x...      # from step 1
+```
+
+Then fill both rows of the Deployment table in
 [`README.md`](README.md) — submission item #3 wants the testnet **and** mainnet
 addresses, not one of them.
 

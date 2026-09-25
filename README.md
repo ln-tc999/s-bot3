@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/public/assets/logo.svg" alt="s-bot3" width="72" />
+  <img src="web/public/assets/logo.png" alt="s-bot3" width="72" />
 </p>
 
 <h1 align="center">s-bot3</h1>
@@ -127,6 +127,15 @@ the fee charged on both sides.
 You need a little BOT for gas. On testnet, take it from
 [faucet.botchain.ai/basic](https://faucet.botchain.ai/basic).
 
+## Live
+
+**[s-bot3.vercel.app](https://s-bot3.vercel.app)**
+
+The site supports **both networks in one deployment**. A network switcher in
+the header lets you flip between BOT Chain Testnet and BOT Chain Mainnet —
+the wallet switches chains, and balances, index data, and explorer links
+reload from the selected network automatically.
+
 ## Deployment
 
 | Network | Chain ID | `SBot3Registry` | `TokenBook` |
@@ -134,10 +143,19 @@ You need a little BOT for gas. On testnet, take it from
 | BOT Chain Testnet | `968` | `<TESTNET_REGISTRY>` | `<TESTNET_TOKENBOOK>` |
 | BOT Chain Mainnet | `677` | `<MAINNET_REGISTRY>` | `<MAINNET_TOKENBOOK>` |
 
-Deploy `SBot3Registry` and `TokenBook` once each, then paste both into
-`web/.env.local`. Constituent tokens are registered in the book — mocks on
-testnet, real ERC20s on mainnet — and every index's share token is deployed from
-the site by whoever owns that index, so neither is listed here.
+Deploy `SBot3Registry` and `TokenBook` once per network. Addresses are
+configured per chain in
+[`web/src/config/contracts.ts`](web/src/config/contracts.ts): the testnet ones
+are hardcoded as defaults, and mainnet reads from the environment.
+
+```bash
+NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS=0x...
+```
+
+Constituent tokens are registered in the book — mocks on testnet, real ERC20s on
+mainnet — and every index's share token is deployed from the site by whoever owns
+that index, so neither is listed here.
 
 Step by step, including the constructor arguments and how to prove the
 deployment works: **[DEPLOY.md](DEPLOY.md)**.
@@ -216,12 +234,21 @@ forge test --root contracts
 ```bash
 cd web
 pnpm install
-cp .env.example .env.local     # then fill in the two addresses
+cp .env.example .env.local     # then fill in the contract addresses
 pnpm dev
 ```
 
-Set `NEXT_PUBLIC_CHAIN_ID=677` to point a deployment at mainnet; unset it and it
-talks to testnet.
+The site ships with a **network switcher** in the header. Testnet (`968`) is
+the default; no env var is needed to use it. To enable mainnet (`677`), set
+the mainnet contract addresses:
+
+```bash
+NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...
+NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS=0x...
+```
+
+Once set, the switcher in the header lets users flip between testnet and
+mainnet at runtime — no rebuild required.
 
 ### Against a local chain
 

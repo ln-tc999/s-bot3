@@ -1,15 +1,20 @@
 import { erc20Abi } from "viem";
+import { getNetworkConfig } from "@/config/contracts";
 import { tokenBookAbi } from "./abi";
-import { publicClient, readOrFallback } from "./client";
+import { getPublicClient, readOrFallback } from "./client";
 
 /**
  * Where the symbol to token bindings live. The registry stores none, on purpose:
  * an index publishes a symbol and a weight, and an address would be the registry
  * asserting something the record does not say. Settlement needs one anyway, so
  * it is kept in its own write-once book.
+ *
+ * Per network, like the registry — each chain has its own book, and a binding on
+ * one says nothing about the other.
  */
-export const tokenBookAddress = (): `0x${string}` | undefined =>
-  process.env.NEXT_PUBLIC_TOKENBOOK_ADDRESS as `0x${string}` | undefined;
+export const tokenBookAddress = (
+  chainId?: number | null,
+): `0x${string}` | undefined => getNetworkConfig(chainId).tokenBookAddress;
 
 /**
  * Resolve an index's symbols to the tokens it settles in.
@@ -20,15 +25,16 @@ export const tokenBookAddress = (): `0x${string}` | undefined =>
  */
 export const fetchTokenAddresses = async (
   symbols: readonly string[],
+  chainId?: number | null,
 ): Promise<`0x${string}`[] | null> => {
-  const book = tokenBookAddress();
+  const book = tokenBookAddress(chainId);
 
   if (!book || symbols.length === 0) {
     return null;
   }
 
   try {
-    const addresses = await publicClient.readContract({
+    const addresses = await getPublicClient(chainId).readContract({
       address: book,
       abi: tokenBookAbi,
       functionName: "addressesOf",
@@ -42,8 +48,10 @@ export const fetchTokenAddresses = async (
   }
 };
 
-export const fetchRegisteredSymbols = async (): Promise<string[]> => {
-  const book = tokenBookAddress();
+export const fetchRegisteredSymbols = async (
+  chainId?: number | null,
+): Promise<string[]> => {
+  const book = tokenBookAddress(chainId);
 
   if (!book) {
     return [];
@@ -51,7 +59,7 @@ export const fetchRegisteredSymbols = async (): Promise<string[]> => {
 
   const symbols = await readOrFallback(
     "allSymbols",
-    publicClient.readContract({
+    getPublicClient(chainId).readContract({
       address: book,
       abi: tokenBookAbi,
       functionName: "allSymbols",
@@ -77,8 +85,9 @@ export interface BasketToken {
  */
 export const fetchBasketTokens = async (
   symbols: readonly string[],
+  chainId?: number | null,
 ): Promise<BasketToken[] | null> => {
-  const addresses = await fetchTokenAddresses(symbols);
+  const addresses = await fetchTokenAddresses(symbols, chainId);
 
   if (!addresses) {
     return null;
@@ -88,7 +97,7 @@ export const fetchBasketTokens = async (
     addresses.map((address) =>
       readOrFallback(
         `decimals(${address})`,
-        publicClient.readContract({
+        getPublicClient(chainId).readContract({
           address,
           abi: erc20Abi,
           functionName: "decimals",

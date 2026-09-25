@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { Dithering } from "@paper-design/shaders-react";
+import { useEffect, useMemo, useState } from "react";
 
 // Helper: read system dark-mode preference
 function getSystemPrefersDark(): boolean {
@@ -167,7 +167,7 @@ export function PaperDesignBackground({
         className="absolute inset-0"
         style={{
           backgroundImage:
-            'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'120\' viewBox=\'0 0 120 120\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'1.25\' numOctaves=\'2\' stitchTiles=\'stitch\'/%3E%3C/fe%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.11\'/%3E%3C/svg%3E")',
+            "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.25' numOctaves='2' stitchTiles='stitch'/%3E%3C/fe%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.11'/%3E%3C/svg%3E\")",
           backgroundSize: "cover",
           opacity: 0.5,
           mixBlendMode: isDark ? "screen" : "multiply",

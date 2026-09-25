@@ -9,8 +9,8 @@ import {
   useState,
 } from "react";
 import { erc20Abi, formatUnits } from "viem";
-import { publicClient, readOrFallback } from "@/lib/chain/client";
-import type { LiveIndex } from "@/lib/chain/registry";
+import { getPublicClient, readOrFallback } from "@/lib/chain/client";
+import { fetchIndexes, type LiveIndex } from "@/lib/chain/registry";
 import { UNIT_DECIMALS } from "@/lib/chain/unit";
 import { indexVaultAbi, SHARE_DECIMALS } from "@/lib/chain/vault";
 import type { PortfolioPosition } from "@/lib/portfolio";
@@ -52,13 +52,36 @@ interface PortfolioProviderProps {
 }
 
 export const PortfolioProvider = ({
-  liveIndexes,
+  liveIndexes: initialLiveIndexes,
   children,
 }: PortfolioProviderProps) => {
-  const { address, epoch } = useWallet();
+  const { address, epoch, chainId } = useWallet();
+  const [liveIndexes, setLiveIndexes] =
+    useState<LiveIndex[]>(initialLiveIndexes);
   const [shares, setShares] = useState<Record<string, bigint>>({});
   const [navPerShare, setNavPerShare] = useState<Record<string, bigint>>({});
   const [isLoading, setIsLoading] = useState(false);
+
+  /**
+   * The server render is the initial list, not the last word: each network has
+   * its own registry, so switching one has to reread it here.
+   */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: epoch is the refetch trigger a write bumps, not a value this effect reads
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchIndexes(chainId)
+      .then((indexes) => {
+        if (!cancelled) {
+          setLiveIndexes(indexes);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chainId, epoch]);
 
   /**
    * Flattened to a string so the effect depends on the vault list's contents
@@ -71,8 +94,12 @@ export const PortfolioProvider = ({
   // biome-ignore lint/correctness/useExhaustiveDependencies: epoch is the refetch trigger a write bumps, not a value this effect reads
   useEffect(() => {
     if (!vaultKey) {
+      setShares({});
+      setNavPerShare({});
       return;
     }
+
+    const client = getPublicClient(chainId);
 
     const vaults = vaultKey.split(",").map((entry) => {
       const [label, vault] = entry.split(":");
@@ -93,7 +120,7 @@ export const PortfolioProvider = ({
     const nav = (vault: `0x${string}`) =>
       readOrFallback(
         `navPerShare(${vault})`,
-        publicClient.readContract({
+        client.readContract({
           address: vault,
           abi: indexVaultAbi,
           functionName: "navPerShare",
@@ -104,7 +131,7 @@ export const PortfolioProvider = ({
     const balanceOf = (token: `0x${string}`, owner: `0x${string}`) =>
       readOrFallback(
         `balanceOf(${token})`,
-        publicClient.readContract({
+        client.readContract({
           address: token,
           abi: erc20Abi,
           functionName: "balanceOf",
@@ -148,7 +175,7 @@ export const PortfolioProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [address, epoch, vaultKey]);
+  }, [address, chainId, epoch, vaultKey]);
 
   const value = useMemo<PortfolioContextValue>(() => {
     const positions = liveIndexes.flatMap((entry) => {

@@ -30,7 +30,10 @@ export const IndexTable = ({ indexes }: IndexTableProps) => (
           <th scope="col" className={HEADER_CLASS}>
             Methodology
           </th>
-          <th scope="col" className={`${HEADER_CLASS} rounded-tr-xl text-right`}>
+          <th
+            scope="col"
+            className={`${HEADER_CLASS} rounded-tr-xl text-right`}
+          >
             Action
           </th>
         </tr>
@@ -42,19 +45,28 @@ export const IndexTable = ({ indexes }: IndexTableProps) => (
             className="group h-[60px] transition-colors duration-150 ease-out hover-row-green"
           >
             <td className="h-[60px] px-5 align-middle">
-              <Link href={indexHref(index.label)} className="block leading-tight">
+              <Link
+                href={indexHref(index.label)}
+                className="block leading-tight"
+              >
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-semibold text-ink group-hover:text-accent-ink transition-colors">
                     {index.name}
                   </span>
                   {index.isLocked ? (
-                    <Badge tone="positive" className="text-[10px] py-0 px-1.5 leading-none">
+                    <Badge
+                      tone="positive"
+                      className="text-[10px] py-0 px-1.5 leading-none"
+                    >
                       <LockSimpleIcon size={9} weight="fill" />
                       Locked
                     </Badge>
                   ) : null}
                   {index.agent ? (
-                    <Badge tone="accent" className="text-[10px] py-0 px-1.5 leading-none">
+                    <Badge
+                      tone="accent"
+                      className="text-[10px] py-0 px-1.5 leading-none"
+                    >
                       <RobotIcon size={9} weight="fill" />
                       Agent
                     </Badge>

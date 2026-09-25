@@ -9,10 +9,13 @@ import { SITE } from "@/config/site";
 import { explorerAddress } from "@/lib/chain/chains";
 import { registryAddress } from "@/lib/chain/registry";
 import { cn } from "@/lib/cn";
+import { useWallet } from "@/lib/onchain/WalletProvider";
 
 export const Sidebar = () => {
   const pathname = usePathname();
-  const registry = registryAddress();
+  /** Only for the registry link, which is per network now. */
+  const { chainId } = useWallet();
+  const registry = registryAddress(chainId);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -32,7 +35,7 @@ export const Sidebar = () => {
           className="flex size-11 items-center justify-center rounded-2xl bg-surface-subtle p-2 transition-transform duration-150 ease-out hover:scale-105"
         >
           <Image
-            src="/assets/logo.svg"
+            src="/assets/logo.png"
             alt={SITE.name}
             width={26}
             height={26}
