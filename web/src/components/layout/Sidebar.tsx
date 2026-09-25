@@ -10,6 +10,7 @@ import { explorerAddress } from "@/lib/chain/chains";
 import { registryAddress } from "@/lib/chain/registry";
 import { cn } from "@/lib/cn";
 import { useWallet } from "@/lib/onchain/WalletProvider";
+import { FaucetButton } from "./FaucetButton";
 
 export const Sidebar = () => {
   const pathname = usePathname();
@@ -79,8 +80,10 @@ export const Sidebar = () => {
         {/* Divider */}
         <div className="h-px w-7 bg-line" aria-hidden />
 
-        {/* Registry link */}
+        {/* Faucet and the contract the whole product reads from */}
         <div className="flex flex-col items-center gap-2">
+          <FaucetButton />
+
           {/* Router / Explorer Icon Button */}
           {registry ? (
             <a
