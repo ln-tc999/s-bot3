@@ -22,7 +22,7 @@ const MAX_STACKED = 4;
 const COPIED_MS = 1600;
 
 const ACTIONS: ReadonlyArray<{ href: string; label: string; icon: Icon }> = [
-  { href: "/swap", label: "Swap", icon: ArrowsLeftRightIcon },
+  { href: "/trade", label: "Trade", icon: ArrowsLeftRightIcon },
   { href: "/create", label: "Create", icon: PlusIcon },
   { href: "/explore", label: "Explore", icon: CompassIcon },
 ];

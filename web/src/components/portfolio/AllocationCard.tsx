@@ -30,7 +30,7 @@ export const AllocationCard = ({ allocation }: AllocationCardProps) => {
         <div className="soft-inset flex-1 rounded-[1.35rem] bg-surface-subtle">
           <EmptyState
             title="Nothing to break down"
-            description="Deposit into an index to see which tokens you hold through it."
+            description="Subscribe to an index to see which tokens you hold through it."
           />
         </div>
       )}

@@ -59,8 +59,10 @@ export const PositionList = ({ positions }: PositionListProps) => (
       <div className="soft-inset rounded-[1.35rem] bg-surface-subtle">
         <EmptyState
           title="No positions yet"
-          description="Deposit into an index to see it tracked here."
-          action={<ButtonLink href="/explore">Explore indexes</ButtonLink>}
+          description="Subscribe to an index to see it tracked here."
+          action={
+            <ButtonLink href="/trade">Find one to subscribe to</ButtonLink>
+          }
         />
       </div>
     )}

@@ -171,8 +171,8 @@ export const PortfolioSplit = ({
         <ButtonLink href="/explore" variant="secondary" className="px-3.5 py-2">
           Explore
         </ButtonLink>
-        <ButtonLink href="/swap" className="px-3.5 py-2">
-          Deposit
+        <ButtonLink href="/trade" className="px-3.5 py-2">
+          Subscribe
         </ButtonLink>
       </div>
 
@@ -237,7 +237,7 @@ export const PortfolioSplit = ({
           <div className="flex items-center border-t border-line">
             <EmptyState
               title="No holdings yet"
-              description="Deposit into an index and it will appear here with its unit balance."
+              description="Subscribe to an index and it will appear here with its unit balance."
             />
           </div>
         )}
