@@ -23,6 +23,7 @@ import {
   discoverWallets,
   type Eip1193Provider,
   getInjectedProvider,
+  pickWallet,
   requestBotChain,
   type WalletInfo,
 } from "./provider";
@@ -95,9 +96,10 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
   const refresh = useCallback(() => setEpoch((value) => value + 1), []);
 
   /**
-   * The provider every call goes through: the chosen announced wallet, or the
-   * legacy injected one when nothing announced. Read through a callback rather
-   * than held in state so it cannot go stale between a render and a click.
+   * The provider every call goes through: the identified wallet, falling back to
+   * the injected one only when nothing has announced itself. Read through a
+   * callback rather than held in state so it cannot go stale between a render
+   * and a click.
    */
   const getProvider = useCallback((): Eip1193Provider | undefined => {
     if (activeRdns) {
@@ -128,14 +130,34 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  /** Restore the wallet chosen last time, once it has announced itself. */
+  /**
+   * Settle on a wallet as soon as one is identifiable: the one chosen last time
+   * once it announces itself, or the only one that announced.
+   *
+   * The second half is the point. `window.ethereum` is whichever extension won
+   * the injection race, and some wallets take it over by default — so a visitor
+   * who had added BOT Chain in one wallet was being connected to another that
+   * had never heard of it, and told to switch networks in the wrong place. A
+   * wallet that announced itself under EIP-6963 is identified; the injected one
+   * is a guess, and the guess should never win over the fact.
+   */
   useEffect(() => {
     if (activeRdns) {
       return;
     }
-    const remembered = readStored(WALLET_KEY);
-    if (remembered && wallets.some((entry) => entry.rdns === remembered)) {
-      setActiveRdns(remembered);
+
+    /**
+     * Wallets can still announce late — `discoverWallets` keeps listening, so
+     * this may go from ambiguous to decided as they arrive, and an explicit
+     * `connect(rdns)` overrides it either way.
+     */
+    const picked = pickWallet(
+      readStored(WALLET_KEY),
+      wallets.map((entry) => entry.rdns),
+    );
+
+    if (picked) {
+      setActiveRdns(picked);
     }
   }, [activeRdns, wallets]);
 

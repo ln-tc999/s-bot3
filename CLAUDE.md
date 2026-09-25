@@ -12,6 +12,7 @@ pnpm build                # production build
 pnpm lint                 # biome check (lint + format check + import order)
 pnpm format               # biome format --write — NOTE: formats the whole tree
 pnpm check:assets         # fails if a /public path referenced in src/ does not exist
+pnpm check:wallet         # asserts pickWallet's precedence (announced beats injected)
 pnpm contracts:build      # forge build --root ../contracts
 pnpm contracts:check      # forge test --root ../contracts
 ```
@@ -102,7 +103,10 @@ configured chain only, so pointing a local run at anvil does not redirect the
 other network to it too.
 
 `lib/onchain/` is all writes and all wallet state, every file `"use client"`:
-`provider.ts` is a hand-rolled EIP-6963 discovery + BOT Chain add/switch,
+`provider.ts` is a hand-rolled EIP-6963 discovery + BOT Chain add/switch, and
+`pickWallet` there decides which wallet acts: a remembered choice, else the sole
+announcer, else nothing — `window.ethereum` is the last resort, never a
+preference, because it is only whichever extension won the injection race,
 `WalletProvider.tsx` owns the connection, and hooks (`useCreateIndex`,
 `useVaultActions`) do write → `waitForTransactionReceipt` → `refresh()`.
 `refresh()` bumps `epoch`, and `epoch` is what every balance effect depends on —

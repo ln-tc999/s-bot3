@@ -10,7 +10,8 @@
     "format": "biome format --write",
     "contracts:build": "forge build --root ../contracts",
     "contracts:check": "forge test --root ../contracts",
-    "check:assets": "node scripts/check-assets.mjs"
+    "check:assets": "node scripts/check-assets.mjs",
+    "check:wallet": "tsx src/lib/onchain/provider.check.ts"
   },
   "dependencies": {
     "@paper-design/shaders-react": "^0.0.81",

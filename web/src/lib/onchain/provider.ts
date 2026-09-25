@@ -52,6 +52,27 @@ export const discoverWallets = (
   return () => globalThis.removeEventListener(ANNOUNCE, handler);
 };
 
+/**
+ * Which wallet to act through, given the remembered choice and whoever has
+ * announced themselves. Null means nothing is identifiable yet, and only then
+ * should a caller fall back to `window.ethereum`.
+ *
+ * That order is the whole rule: the injected provider is whichever extension
+ * won the race to inject, and some wallets take it over by default, so it is a
+ * guess about identity. An announced wallet is a fact. A guess must never win.
+ */
+export const pickWallet = (
+  remembered: string | null,
+  announced: readonly string[],
+): string | null => {
+  if (remembered && announced.includes(remembered)) {
+    return remembered;
+  }
+
+  // More than one and it is genuinely ambiguous — the picker asks the user.
+  return announced.length === 1 ? announced[0] : null;
+};
+
 const toHexChainId = (id: number): `0x${string}` => `0x${id.toString(16)}`;
 
 /** The wallet does not know this chain yet. */
