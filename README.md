@@ -140,8 +140,24 @@ reload from the selected network automatically.
 
 | Network | Chain ID | `SBot3Registry` | `TokenBook` |
 |---|---|---|---|
-| BOT Chain Testnet | `968` | `<TESTNET_REGISTRY>` | `<TESTNET_TOKENBOOK>` |
+| BOT Chain Testnet | `968` | `0x54b16973803397Beb3804774fB1f356d6e30ad27` | `0xcF7e32d79553aA97259724bb780b951115F5b647` |
 | BOT Chain Mainnet | `677` | `<MAINNET_REGISTRY>` | `<MAINNET_TOKENBOOK>` |
+
+An index can only name symbols the book has bound, because settlement has to be
+able to resolve every one of them. On testnet these are bound:
+
+| Symbol | Token | Decimals | Address |
+|---|---|---|---|
+| `btc` | mBTC | 8 | `0xe4c0c88a4b2e5b150D3bB8D3d391E6A87b3d5379` |
+| `eth` | mETH | 18 | `0xC12684b7063e3C749f0227539601a7b370073cEA` |
+| `sol` | mSOL | 9 | `0x0524084225073d0d1A6fCc37731bAD7B99D240C2` |
+| `usdc` | mUSDC | 6 | `0x49f25B7Bc72F877FCD11482e14100660e58446F9` |
+
+Each `faucet()` claim is 1,000 whole units. The decimals are deliberately
+realistic: that is what a weight is converted through, and getting one wrong
+misprices every subscription without raising anything. `TokenBook.register` is
+open, so anyone can bind a symbol nobody has claimed — and nobody can repoint one
+that is already bound.
 
 Deploy `SBot3Registry` and `TokenBook` once per network. Addresses are
 configured per chain in
