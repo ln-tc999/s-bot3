@@ -171,10 +171,12 @@ than no option.
 
 ## Deployment
 
-| Network | Chain ID | `SBot3Registry` | `TokenBook` |
+| Network | Chain ID | `SBot3Registry` | `MockERC20 (mUSDC)` |
 |---|---|---|---|
-| BOT Chain Testnet | `968` | `0x54b16973803397Beb3804774fB1f356d6e30ad27` | `0xcF7e32d79553aA97259724bb780b951115F5b647` |
-| BOT Chain Mainnet | `677` | `<MAINNET_REGISTRY>` | `<MAINNET_TOKENBOOK>` |
+| BOT Chain Testnet | `968` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
+| BOT Chain Mainnet | `677` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` |
+
+> **Note:** Mainnet addresses are the same as testnet due to deterministic CREATE opcode (same deployer, same nonce). Contracts were deployed via `forge create --evm-version paris` against `https://rpc.botchain.ai`.
 
 An index can only name symbols the book has bound, because settlement has to be
 able to resolve every one of them. On testnet these are bound:
@@ -184,7 +186,9 @@ able to resolve every one of them. On testnet these are bound:
 | `btc` | mBTC | 8 | `0xe4c0c88a4b2e5b150D3bB8D3d391E6A87b3d5379` |
 | `eth` | mETH | 18 | `0xC12684b7063e3C749f0227539601a7b370073cEA` |
 | `sol` | mSOL | 9 | `0x0524084225073d0d1A6fCc37731bAD7B99D240C2` |
-| `usdc` | mUSDC | 6 | `0x49f25B7Bc72F877FCD11482e14100660e58446F9` |
+| `usdc` | mUSDC | 6 | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
+
+Mainnet uses the same MockERC20 (`0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf`) for faucet + settlement. The registry reads `NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS` and `NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS` from Vercel env.
 
 Each `faucet()` claim is 1,000 whole units. The decimals are deliberately
 realistic: that is what a weight is converted through, and getting one wrong
