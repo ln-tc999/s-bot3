@@ -126,7 +126,7 @@ export const IndexBuilderForm = () => {
   /** Touch the token list once and the words stop overruling you. */
   const [isSelectionManual, setIsSelectionManual] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const { address, hasProvider, isBotChain, connect, switchNetwork } =
+  const { address, hasProvider, isBotChain, connect, switchNetwork, chainId } =
     useWallet();
   const { publish, isPending, error, created, dismiss } = useCreateIndex();
 
@@ -461,6 +461,7 @@ export const IndexBuilderForm = () => {
         isOpen={isConfirming && created === null}
         name={name}
         label={label}
+        chainId={chainId}
         constituents={selectedSymbols.map((symbol) => ({
           token: TOKENS[symbol],
           weightBps: weights[symbol] ?? 0,
