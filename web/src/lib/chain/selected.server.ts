@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { defaultChainId, NETWORK_COOKIE, parseCookieChainId } from "./selected";
+import { defaultChainId, NETWORK_COOKIE, parseChainIdValue } from "./selected";
 
 /**
  * The network a server component should read.
@@ -12,6 +12,6 @@ import { defaultChainId, NETWORK_COOKIE, parseCookieChainId } from "./selected";
 export const selectedChainId = async (): Promise<number> => {
   const store = await cookies();
   return (
-    parseCookieChainId(store.get(NETWORK_COOKIE)?.value) ?? defaultChainId()
+    parseChainIdValue(store.get(NETWORK_COOKIE)?.value) ?? defaultChainId()
   );
 };

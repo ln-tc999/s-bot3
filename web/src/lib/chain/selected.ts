@@ -27,16 +27,20 @@ const readCookieValue = (header: string): string | null => {
   return null;
 };
 
+/**
+ * One cookie's value, already picked out of the header: `"677"`, `"968"`, or
+ * something a visitor wrote by hand. `Number(null)` is 0 and 0 is a chain id
+ * nobody means, so an absent value is `null`, not 0.
+ */
+export const parseChainIdValue = (
+  raw: string | null | undefined,
+): number | null => (raw ? knownChainId(Number(raw)) : null);
+
+/** The whole `Cookie` header, as `document.cookie` hands it over. */
 export const parseCookieChainId = (
   header: string | null | undefined,
-): number | null => {
-  if (!header) {
-    return null;
-  }
-
-  const raw = readCookieValue(header);
-  return raw ? knownChainId(Number(raw)) : null;
-};
+): number | null =>
+  header ? parseChainIdValue(readCookieValue(header)) : null;
 
 /** The configured default, for a visitor who has never chosen. */
 export const defaultChainId = (): number =>
