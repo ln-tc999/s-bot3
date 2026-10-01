@@ -17,8 +17,8 @@ const toMessage = (error: unknown): string => {
 export const useVaultActions = () => {
   const {
     address,
-    isBotChain,
-    chainId,
+    isOnNetwork,
+    selectedChainId,
     getWalletClient,
     refresh,
     switchNetwork,
@@ -30,8 +30,8 @@ export const useVaultActions = () => {
     hash: `0x${string}`;
   } | null>(null);
 
-  /** Reads go to whichever BOT chain the wallet is on, not a build-time one. */
-  const client = getPublicClient(chainId);
+  /** Reads go to the network on show, not a build-time one. */
+  const client = getPublicClient(selectedChainId);
 
   const send = useCallback(
     async (label: string, action: () => Promise<`0x${string}`>) => {
@@ -40,7 +40,7 @@ export const useVaultActions = () => {
         return null;
       }
 
-      if (!isBotChain) {
+      if (!isOnNetwork) {
         await switchNetwork();
         return null;
       }
@@ -61,7 +61,7 @@ export const useVaultActions = () => {
         setPending(null);
       }
     },
-    [address, client, isBotChain, refresh, switchNetwork],
+    [address, client, isOnNetwork, refresh, switchNetwork],
   );
 
   /**

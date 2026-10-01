@@ -8,7 +8,7 @@ here.
 |---|---|---|
 | `SBot3Registry` | Holds every index: composition, methodology, lock, agent, vault | you, once |
 | `TokenBook` | The symbol to token bindings every vault settles against | you, once |
-| `MockERC20` | A test constituent. Testnet only — on mainnet you bind real tokens | you, one per symbol |
+| `MockERC20` | A test constituent. Testnet uses one per symbol; mainnet binds real tokens, and a mock only where the chain has no canonical one yet | you, one per symbol |
 | `IndexVault` | One index's share token | the index owner, from the site |
 
 Do the whole thing on **testnet 968 first**. Contracts are immutable: a bug on
@@ -95,9 +95,11 @@ deploy_token "Mock Bitcoin" mBTC 8  100000000            btc
 deploy_token "Mock Ether"   mETH 18 1000000000000000000  eth
 ```
 
-**On mainnet**, skip `MockERC20` entirely. Register the real token addresses
-instead — `TokenBook.register("weth", 0x…)` — and everything downstream works
-unchanged. A vault never knows or cares whether the token it pulls is a mock.
+**On mainnet**, prefer real token addresses — `TokenBook.register("weth", 0x…)` —
+and everything downstream works unchanged. A vault never knows or cares whether
+the token it pulls is a mock. Where the chain has no canonical ERC20 for a symbol
+yet, bind a mock and say so: BOT Chain mainnet currently binds `usdc` to a
+`MockERC20`, because there is no issued USDC there to bind.
 
 ## 4. Prove it works on the chain you just deployed to
 
@@ -190,8 +192,10 @@ Identical, with three differences:
 
 - MetaMask on **BOT Chain Mainnet**: chain ID `677`, RPC
   `https://rpc.botchain.ai`, explorer `https://scan.botchain.ai`.
-- **No `MockERC20`.** Register real token addresses in `TokenBook` instead.
-  Nothing else changes: the vault pulls whatever ERC20 the book names.
+- **Bind real token addresses in `TokenBook`.** Where the chain has no canonical
+  ERC20 for a symbol yet, bind a mock and say so — BOT Chain mainnet binds `usdc`
+  to a `MockERC20`, since there is no issued USDC there. Nothing else changes:
+  the vault pulls whatever ERC20 the book names.
 - There is no faucet, and the site hides the *Get test tokens* button off
   testnet. Take BOT from the organizer, or swap on
   [dex.botchain.ai](https://dex.botchain.ai/#/swap).
@@ -201,7 +205,7 @@ network switcher in the header picks them up at runtime:
 
 ```bash
 NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...   # from step 2
-NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS=0x...      # from step 1
+NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS=0x...   # from step 1
 ```
 
 Then fill both rows of the Deployment table in

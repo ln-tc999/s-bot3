@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { TokenStack } from "@/components/ui/TokenStack";
 import { tradeHref } from "@/config/navigation";
 import { fetchIndexes } from "@/lib/chain/registry";
+import { selectedChainId } from "@/lib/chain/selected.server";
 import { fetchVaultSummary, type VaultSummary } from "@/lib/chain/vault.read";
 import { formatBps, formatUsd } from "@/lib/format";
 
@@ -14,13 +15,16 @@ import { formatBps, formatUsd } from "@/lib/format";
  * purpose is settling against something.
  */
 export const TradePage = async () => {
-  const indexes = (await fetchIndexes().catch(() => [])).filter(
+  const chainId = await selectedChainId();
+  const indexes = (await fetchIndexes(chainId).catch(() => [])).filter(
     (index) => index.vault !== null,
   );
 
   const vaults = await Promise.all(
     indexes.map((index) =>
-      fetchVaultSummary(index.vault as `0x${string}`).catch(() => null),
+      fetchVaultSummary(index.vault as `0x${string}`, chainId).catch(
+        () => null,
+      ),
     ),
   );
 

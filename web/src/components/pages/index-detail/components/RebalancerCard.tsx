@@ -8,6 +8,8 @@ import { DelegateAgentButton } from "./DelegateAgentButton";
 
 interface RebalancerCardProps {
   index: LiveIndex;
+  /** The chain this record was read from, so the link points at its explorer. */
+  chainId: number;
 }
 
 /**
@@ -15,7 +17,7 @@ interface RebalancerCardProps {
  * the contract is what enforces it — `setWeights` accepts the agent, every
  * other function refuses it, including after the methodology is locked.
  */
-export const RebalancerCard = ({ index }: RebalancerCardProps) => (
+export const RebalancerCard = ({ index, chainId }: RebalancerCardProps) => (
   <Card>
     <CardHeader
       title="Rebalancer"
@@ -42,7 +44,7 @@ export const RebalancerCard = ({ index }: RebalancerCardProps) => (
             <dt className="text-xs text-ink-subtle">Agent</dt>
             <dd>
               <a
-                href={explorerAddress(index.agent)}
+                href={explorerAddress(index.agent, chainId)}
                 target="_blank"
                 rel="noreferrer"
                 className="font-mono text-xs text-ink hover:text-accent"

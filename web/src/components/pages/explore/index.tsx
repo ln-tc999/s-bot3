@@ -3,6 +3,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { sumLiquidity } from "@/lib/chain/liquidity";
 import { fetchIndexes, type LiveIndex } from "@/lib/chain/registry";
+import { selectedChainId } from "@/lib/chain/selected.server";
 import { CollectionTile } from "./components/CollectionTile";
 import { IndexTable } from "./components/IndexTable";
 import { LiquidityTile } from "./components/LiquidityTile";
@@ -33,8 +34,9 @@ interface ExplorePageProps {
 }
 
 export const ExplorePage = async ({ collection }: ExplorePageProps) => {
-  const indexes = await fetchIndexes().catch(() => []);
-  const liquidity = await sumLiquidity(indexes).catch(() => ({
+  const chainId = await selectedChainId();
+  const indexes = await fetchIndexes(chainId).catch(() => []);
+  const liquidity = await sumLiquidity(indexes, chainId).catch(() => ({
     totalUsd: 0,
     vaultCount: 0,
   }));

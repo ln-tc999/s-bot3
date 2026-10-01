@@ -5,11 +5,11 @@ import { erc20Abi, formatUnits, parseUnits } from "viem";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { TxSuccessDialog } from "@/components/ui/TxSuccessDialog";
-import { activeChain } from "@/lib/chain/chains";
-import { publicClient, readOrFallback } from "@/lib/chain/client";
+import { getPublicClient, readOrFallback } from "@/lib/chain/client";
 import type { LiveIndex } from "@/lib/chain/registry";
 import type { BasketToken } from "@/lib/chain/tokenbook";
 import { UNIT_DECIMALS } from "@/lib/chain/unit";
+import { useNetwork } from "@/lib/chain/use-network";
 import { indexVaultAbi, SHARE_DECIMALS } from "@/lib/chain/vault";
 import { cn } from "@/lib/cn";
 import { formatAmount, formatBps, formatUsd } from "@/lib/format";
@@ -65,7 +65,15 @@ export const TradePanel = ({
   initialNavWei,
 }: TradePanelProps) => {
   const { address, epoch } = useWallet();
+  const network = useNetwork();
   const actions = useVaultActions();
+
+  /**
+   * Reads follow the network the page is showing, so a preview on mainnet is
+   * not a testnet quote — and a visitor who picked mainnet without a wallet
+   * still gets mainnet numbers.
+   */
+  const client = getPublicClient(network.chainId);
 
   const [mode, setMode] = useState<Mode>("subscribe");
   const [sharesInput, setSharesInput] = useState("");
@@ -90,7 +98,7 @@ export const TradePanel = ({
               tokens.map((token) =>
                 readOrFallback(
                   `balanceOf(${token.symbol})`,
-                  publicClient.readContract({
+                  client.readContract({
                     address: token.address,
                     abi: erc20Abi,
                     functionName: "balanceOf",
@@ -104,7 +112,7 @@ export const TradePanel = ({
         address
           ? readOrFallback(
               "shares",
-              publicClient.readContract({
+              client.readContract({
                 address: vault,
                 abi: indexVaultAbi,
                 functionName: "balanceOf",
@@ -115,7 +123,7 @@ export const TradePanel = ({
           : Promise.resolve(0n),
         readOrFallback(
           "navPerShare",
-          publicClient.readContract({
+          client.readContract({
             address: vault,
             abi: indexVaultAbi,
             functionName: "navPerShare",
@@ -136,7 +144,7 @@ export const TradePanel = ({
     return () => {
       cancelled = true;
     };
-  }, [address, epoch, tokens, vault]);
+  }, [address, client, epoch, tokens, vault]);
 
   /**
    * The quote comes from the vault, not from arithmetic here: it reads the
@@ -156,7 +164,7 @@ export const TradePanel = ({
     const quote = async () => {
       try {
         if (mode === "subscribe") {
-          const [quoted, required] = await publicClient.readContract({
+          const [quoted, required] = await client.readContract({
             address: vault,
             abi: indexVaultAbi,
             functionName: "previewSubscribe",
@@ -171,7 +179,7 @@ export const TradePanel = ({
           return;
         }
 
-        const quoted = await publicClient.readContract({
+        const quoted = await client.readContract({
           address: vault,
           abi: indexVaultAbi,
           functionName: "previewRedeem",
@@ -196,7 +204,7 @@ export const TradePanel = ({
     return () => {
       cancelled = true;
     };
-  }, [mode, navPerShare, shares, vault]);
+  }, [client, mode, navPerShare, shares, vault]);
 
   const isSubscribing = mode === "subscribe";
 
@@ -364,7 +372,7 @@ export const TradePanel = ({
           {/* `faucet()` is a MockERC20 affordance. On mainnet the book binds
               real tokens, which have no such function, so the button would only
               ever revert. */}
-          {short.length > 0 && activeChain.testnet ? (
+          {short.length > 0 && network.isTestnet ? (
             <Button
               variant="secondary"
               onClick={() => actions.faucet(short)}

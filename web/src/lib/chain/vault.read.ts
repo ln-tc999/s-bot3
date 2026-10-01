@@ -1,5 +1,5 @@
 import { formatUnits } from "viem";
-import { publicClient, readOrFallback } from "./client";
+import { getPublicClient, readOrFallback } from "./client";
 import { UNIT_DECIMALS } from "./unit";
 import { indexVaultAbi } from "./vault";
 
@@ -47,11 +47,13 @@ export interface VaultSummary {
 
 export const fetchVaultState = async (
   vault: `0x${string}`,
+  chainId?: number | null,
 ): Promise<VaultState | null> => {
+  const client = getPublicClient(chainId);
   const read = <T>(functionName: string, fallback: T) =>
     readOrFallback(
       `${functionName}(${vault})`,
-      publicClient.readContract({
+      client.readContract({
         address: vault,
         abi: indexVaultAbi,
         // biome-ignore lint/suspicious/noExplicitAny: one helper for reads with different return types
@@ -116,7 +118,8 @@ export const toVaultSummary = (state: VaultState): VaultSummary => ({
 
 export const fetchVaultSummary = async (
   vault: `0x${string}`,
+  chainId?: number | null,
 ): Promise<VaultSummary | null> => {
-  const state = await fetchVaultState(vault);
+  const state = await fetchVaultState(vault, chainId);
   return state ? toVaultSummary(state) : null;
 };

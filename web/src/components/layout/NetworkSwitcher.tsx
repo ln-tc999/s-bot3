@@ -9,15 +9,23 @@ import { useWallet } from "@/lib/onchain/WalletProvider";
 import { GLASS } from "./chrome";
 
 export const NetworkSwitcher = () => {
-  const { chainId, switchNetwork, isBotChain } = useWallet();
+  const { selectedChainId, selectNetwork, isOnNetwork } = useWallet();
   const [isOpen, setIsOpen] = useState(false);
 
-  const activeId = chainId && NETWORKS[chainId] ? chainId : 968;
+  const activeId = selectedChainId;
   const currentNetwork = NETWORKS[activeId];
+
+  /**
+   * A network with no registry configured has nothing to show, so it is not
+   * offered. The mainnet row appears once its address is in the environment.
+   */
+  const available = Object.values(NETWORKS).filter(
+    (network) => network.registryAddress,
+  );
 
   const handleSelect = (targetChainId: number) => {
     setIsOpen(false);
-    switchNetwork(targetChainId);
+    selectNetwork(targetChainId);
   };
 
   return (
@@ -28,7 +36,7 @@ export const NetworkSwitcher = () => {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex h-[42px] items-center gap-2 rounded-[8px] border border-line-strong/60 bg-surface/80 px-3 text-xs font-semibold text-ink shadow-sm transition-all duration-150 ease-out hover:bg-surface-hover hover:border-line-strong",
-          !isBotChain && "border-negative/60 bg-negative/10 text-negative",
+          !isOnNetwork && "border-negative/60 bg-negative/10 text-negative",
         )}
       >
         <span className="relative flex size-5 items-center justify-center shrink-0">
@@ -72,7 +80,7 @@ export const NetworkSwitcher = () => {
             <div className="px-2 py-1 text-[11px] font-medium uppercase tracking-wider text-ink-subtle">
               Select Network
             </div>
-            {Object.values(NETWORKS).map((net) => {
+            {available.map((net) => {
               const isSelected = activeId === net.chainId;
               return (
                 <button

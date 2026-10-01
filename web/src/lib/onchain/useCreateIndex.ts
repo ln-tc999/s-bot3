@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import { sbot3RegistryAbi } from "@/lib/chain/abi";
-import { publicClient } from "@/lib/chain/client";
+import { getPublicClient } from "@/lib/chain/client";
 import { registryAddress } from "@/lib/chain/registry";
 import type { TokenSymbol } from "@/types/index-fund";
 import { useWallet } from "./WalletProvider";
@@ -33,15 +33,29 @@ const toMessage = (error: unknown): string => {
  * it just published.
  */
 export const useCreateIndex = () => {
-  const { address, isBotChain, getWalletClient, refresh, switchNetwork } =
-    useWallet();
+  const {
+    address,
+    selectedChainId,
+    isOnNetwork,
+    getWalletClient,
+    refresh,
+    switchNetwork,
+  } = useWallet();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<CreatedIndex | null>(null);
 
   const publish = useCallback(
     async (input: CreateIndexInput) => {
-      const registry = registryAddress();
+      /**
+       * The network on show, not the one this build was configured for: on
+       * mainnet `registryAddress()` with no argument resolves to the testnet
+       * registry, and the two happen to be the same address — as the other
+       * network's token. The write is guarded on the wallet being here too, so
+       * a wallet on the other network cannot sign into the wrong contract.
+       */
+      const registry = registryAddress(selectedChainId);
+      const client = getPublicClient(selectedChainId);
 
       if (!registry) {
         setError("The registry is not configured for this deployment.");
@@ -53,7 +67,7 @@ export const useCreateIndex = () => {
         return;
       }
 
-      if (!isBotChain) {
+      if (!isOnNetwork) {
         await switchNetwork();
         return;
       }
@@ -63,7 +77,7 @@ export const useCreateIndex = () => {
 
       try {
         /** Cheaper than letting `create` revert, and it can name the clash. */
-        const taken = await publicClient.readContract({
+        const taken = await client.readContract({
           address: registry,
           abi: sbot3RegistryAbi,
           functionName: "exists",
@@ -90,7 +104,7 @@ export const useCreateIndex = () => {
           ],
         });
 
-        await publicClient.waitForTransactionReceipt({ hash });
+        await client.waitForTransactionReceipt({ hash });
         setCreated({ hash, label: input.label });
         refresh();
       } catch (cause) {
@@ -99,7 +113,14 @@ export const useCreateIndex = () => {
         setIsPending(false);
       }
     },
-    [address, getWalletClient, isBotChain, refresh, switchNetwork],
+    [
+      address,
+      getWalletClient,
+      isOnNetwork,
+      refresh,
+      selectedChainId,
+      switchNetwork,
+    ],
   );
 
   return {

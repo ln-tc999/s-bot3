@@ -171,24 +171,37 @@ than no option.
 
 ## Deployment
 
-| Network | Chain ID | `SBot3Registry` | `MockERC20 (mUSDC)` |
-|---|---|---|---|
-| BOT Chain Testnet | `968` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
-| BOT Chain Mainnet | `677` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` |
+| Network | Chain ID | `SBot3Registry` | `TokenBook` | `MockERC20 (mUSDC)` |
+|---|---|---|---|---|
+| BOT Chain Testnet | `968` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` | `0xcF7e32d79553aA97259724bb780b951115F5b647` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
+| BOT Chain Mainnet | `677` | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` | `0x32479aD1f6c35453e5Bf873369f8d99055aA8E8F` | `0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf` |
 
-> **Note:** Mainnet addresses are the same as testnet due to deterministic CREATE opcode (same deployer, same nonce). Contracts were deployed via `forge create --evm-version paris` against `https://rpc.botchain.ai`.
+> **Note:** the registry and the mock token land on the *same two addresses* on
+> both networks, with the roles swapped — `0x1955eF91…32Adf` is the registry on
+> testnet and the mock on mainnet, `0x75ef70Ea…1351F` is the other way round.
+> That is the deterministic CREATE opcode running the same deployer through the
+> same nonces on each chain, deploying in the opposite order. `TokenBook` was
+> deployed later and does not line up. Everything on mainnet went through
+> `forge create --evm-version paris` against `https://rpc.botchain.ai`.
 
 An index can only name symbols the book has bound, because settlement has to be
-able to resolve every one of them. On testnet these are bound:
+able to resolve every one of them. On testnet the book binds these:
 
 | Symbol | Token | Decimals | Address |
 |---|---|---|---|
 | `btc` | mBTC | 8 | `0xe4c0c88a4b2e5b150D3bB8D3d391E6A87b3d5379` |
 | `eth` | mETH | 18 | `0xC12684b7063e3C749f0227539601a7b370073cEA` |
 | `sol` | mSOL | 9 | `0x0524084225073d0d1A6fCc37731bAD7B99D240C2` |
-| `usdc` | mUSDC | 6 | `0x75ef70Ea33994a16751ff0b4f7DCF0F94DF1351F` |
+| `usdc` | mUSDC | 6 | `0x49f25B7Bc72F877FCD11482e14100660e58446F9` |
 
-Mainnet uses the same MockERC20 (`0x1955eF9145cCAa643a8Ee61aE3206F0acb632Adf`) for faucet + settlement. The registry reads `NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS` and `NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS` from Vercel env.
+On mainnet the book binds only `usdc`, to the mock on `0x1955eF91…32Adf` — one
+constituent is enough to publish and trade a real index, and binding a symbol to
+a token nobody has audited would be worse than not binding it. `btc`, `eth` and
+`sol` follow as they become available. The registry is
+`NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS`, the book is
+`NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS`; both are read from the Vercel env, and
+there is no quote-token env — settlement is in kind, so the vault pulls whatever
+the book binds.
 
 Each `faucet()` claim is 1,000 whole units. The decimals are deliberately
 realistic: that is what a weight is converted through, and getting one wrong
@@ -297,7 +310,7 @@ the mainnet contract addresses:
 
 ```bash
 NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS=0x...
-NEXT_PUBLIC_MAINNET_QUOTE_ADDRESS=0x...
+NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS=0x...
 ```
 
 Once set, the switcher in the header lets users flip between testnet and

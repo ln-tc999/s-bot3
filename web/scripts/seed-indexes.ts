@@ -1,18 +1,27 @@
 /**
  * Publishes a spread of indexes, so a fresh registry has something to read.
  *
- *   pnpm seed          # publish whatever is missing
- *   pnpm seed --dry    # list the plan, sign nothing
+ *   NEXT_PUBLIC_CHAIN_ID=677 pnpm seed   # mainnet
+ *   pnpm seed                            # testnet, the default
+ *   pnpm seed --dry                      # list the plan, sign nothing
  *
  * Idempotent: it checks `exists(label)` first, so re-running after a partial run
  * picks up where it stopped instead of reverting on `LabelTaken`.
  *
  * Every symbol here has to be bound in the TokenBook or the index will publish
- * and then never be subscribable, because the basket cannot be assembled.
+ * and then never be subscribable, because the basket cannot be assembled. So the
+ * plan is filtered against what the book actually binds on the network chosen —
+ * a chain holding only `usdc` gets the one index that is only `usdc`.
  */
-import { createPublicClient, createWalletClient, http } from "viem";
+import {
+  createPublicClient,
+  createWalletClient,
+  http,
+  zeroAddress,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sbot3RegistryAbi } from "../src/lib/chain/abi";
+import { getNetworkConfig } from "../src/config/contracts";
+import { sbot3RegistryAbi, tokenBookAbi } from "../src/lib/chain/abi";
 import { botMainnet, botTestnet } from "../src/lib/chain/chains";
 
 const TOTAL_BPS = 10_000;
@@ -25,6 +34,17 @@ interface Seed {
 }
 
 const SEEDS: Seed[] = [
+  {
+    /**
+     * The one that works wherever only a stablecoin is bound. Mainnet's book
+     * holds `usdc` alone for now, so this is the whole plan there.
+     */
+    label: "usd-reserve",
+    name: "USD Reserve",
+    methodology:
+      "One unit of account, held flat. Nothing to rebalance, nothing to time — a place to sit rather than a position to take.",
+    weights: { usdc: 10_000 },
+  },
   {
     label: "two-majors",
     name: "Two Majors 60/40",
@@ -145,17 +165,27 @@ for (const seed of SEEDS) {
 
 const isDry = process.argv.includes("--dry");
 
-const chain =
-  Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 968) === 677
-    ? botMainnet
-    : botTestnet;
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 968);
+const chain = chainId === 677 ? botMainnet : botTestnet;
+const network = getNetworkConfig(chainId);
 
-const registry = process.env.NEXT_PUBLIC_REGISTRY_ADDRESS as
-  | `0x${string}`
-  | undefined;
+const registry = network.registryAddress;
+const book = network.tokenBookAddress;
 
 if (!registry) {
-  die("NEXT_PUBLIC_REGISTRY_ADDRESS is not set");
+  die(
+    chainId === 677
+      ? "NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS is not set"
+      : "NEXT_PUBLIC_REGISTRY_ADDRESS is not set",
+  );
+}
+
+if (!book) {
+  die(
+    chainId === 677
+      ? "NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS is not set"
+      : "NEXT_PUBLIC_TOKENBOOK_ADDRESS is not set",
+  );
 }
 
 const publicClient = createPublicClient({
@@ -169,17 +199,42 @@ const main = async () => {
   const missing: Seed[] = [];
 
   for (const seed of SEEDS) {
+    const symbols = Object.keys(seed.weights);
+    const shape = symbols
+      .map((symbol) => `${symbol} ${(seed.weights[symbol] / 100).toFixed(0)}%`)
+      .join(", ");
+
+    const unbound: string[] = [];
+    for (const symbol of symbols) {
+      let bound = false;
+      try {
+        const token = await publicClient.readContract({
+          address: book,
+          abi: tokenBookAbi,
+          functionName: "addressOf",
+          args: [symbol],
+        });
+        bound = token !== zeroAddress;
+      } catch {
+        // The book reverts on a symbol it has never seen.
+        bound = false;
+      }
+      if (!bound) {
+        unbound.push(symbol);
+      }
+    }
+
+    if (unbound.length > 0) {
+      console.log(`  × ${seed.label.padEnd(16)} needs ${unbound.join(", ")}`);
+      continue;
+    }
+
     const taken = await publicClient.readContract({
       address: registry,
       abi: sbot3RegistryAbi,
       functionName: "exists",
       args: [seed.label],
     });
-
-    const symbols = Object.keys(seed.weights);
-    const shape = symbols
-      .map((symbol) => `${symbol} ${(seed.weights[symbol] / 100).toFixed(0)}%`)
-      .join(", ");
 
     console.log(`  ${taken ? "·" : "+"} ${seed.label.padEnd(16)} ${shape}`);
     if (!taken) {
@@ -199,9 +254,11 @@ const main = async () => {
     return;
   }
 
-  const key = process.env.PRIVATE_KEY as `0x${string}` | undefined;
+  const key = (process.env.PRIVATE_KEY ?? process.env.PRIV_KEY) as
+    | `0x${string}`
+    | undefined;
   if (!key) {
-    die("set PRIVATE_KEY to publish");
+    die("set PRIVATE_KEY (or PRIV_KEY) to publish");
   }
 
   const account = privateKeyToAccount(key);
@@ -211,6 +268,13 @@ const main = async () => {
     transport: http(process.env.NEXT_PUBLIC_RPC_URL),
   });
 
+  /**
+   * Fee estimation is left to viem when nothing is passed, and both BOT chains
+   * reject a legacy transaction priced below their floor — the node's own
+   * suggestion is the one it will take.
+   */
+  const gasPrice = await publicClient.getGasPrice();
+
   console.log(`\npublishing ${missing.length} as ${account.address}`);
 
   for (const seed of missing) {
@@ -219,6 +283,7 @@ const main = async () => {
       address: registry,
       abi: sbot3RegistryAbi,
       functionName: "create",
+      gasPrice,
       args: [
         seed.label,
         seed.name,

@@ -13,9 +13,13 @@ import { VaultStats } from "./components/VaultStats";
 
 interface TradeDetailPageProps {
   index: LiveIndex;
+  chainId: number;
 }
 
-export const TradeDetailPage = async ({ index }: TradeDetailPageProps) => {
+export const TradeDetailPage = async ({
+  index,
+  chainId,
+}: TradeDetailPageProps) => {
   const back = (
     <Link
       href={indexHref(index.label)}
@@ -46,8 +50,11 @@ export const TradeDetailPage = async ({ index }: TradeDetailPageProps) => {
   }
 
   const [tokens, vault] = await Promise.all([
-    fetchBasketTokens(index.constituents.map((entry) => entry.token.symbol)),
-    fetchVaultSummary(index.vault),
+    fetchBasketTokens(
+      index.constituents.map((entry) => entry.token.symbol),
+      chainId,
+    ),
+    fetchVaultSummary(index.vault, chainId),
   ]);
 
   /**
@@ -103,7 +110,7 @@ export const TradeDetailPage = async ({ index }: TradeDetailPageProps) => {
           />
         </div>
         <div className="lg:col-span-2">
-          <VaultStats vault={vault} />
+          <VaultStats vault={vault} chainId={chainId} />
         </div>
       </div>
     </div>

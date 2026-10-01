@@ -11,7 +11,7 @@ import {
 import Link from "next/link";
 import { useState } from "react";
 import { TokenStack } from "@/components/ui/TokenStack";
-import { activeChain } from "@/lib/chain/chains";
+import { useNetwork } from "@/lib/chain/use-network";
 import { cn } from "@/lib/cn";
 import { formatUsd, truncateAddress } from "@/lib/format";
 import { useWallet } from "@/lib/onchain/WalletProvider";
@@ -81,6 +81,7 @@ export const PortfolioHero = ({
   allocation,
 }: PortfolioHeroProps) => {
   const { address } = useWallet();
+  const network = useNetwork();
   const stack = toStack(allocation);
 
   return (
@@ -109,14 +110,14 @@ export const PortfolioHero = ({
                 maxVisible={MAX_STACKED}
               />
               <span className="text-xs text-ink-muted">
-                {`${indexCount === 1 ? "1 index" : `${indexCount} indexes`} · ${activeChain.name}`}
+                {`${indexCount === 1 ? "1 index" : `${indexCount} indexes`} · ${network.name}`}
               </span>
             </span>
           ) : (
             <span className="text-xs text-ink-muted">
               {address
-                ? `No positions yet · ${activeChain.name}`
-                : `Connect a wallet to see your positions · ${activeChain.name}`}
+                ? `No positions yet · ${network.name}`
+                : `Connect a wallet to see your positions · ${network.name}`}
             </span>
           )}
         </div>

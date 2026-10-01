@@ -13,9 +13,10 @@ import { ShareTokenCard } from "./components/ShareTokenCard";
 
 interface IndexDetailPageProps {
   index: LiveIndex;
+  chainId: number;
 }
 
-export const IndexDetailPage = ({ index }: IndexDetailPageProps) => (
+export const IndexDetailPage = ({ index, chainId }: IndexDetailPageProps) => (
   <div className="space-y-6">
     <Link
       href="/explore"
@@ -93,7 +94,7 @@ export const IndexDetailPage = ({ index }: IndexDetailPageProps) => (
         vault={index.vault}
         constituents={index.constituents}
       />
-      <RebalancerCard index={index} />
+      <RebalancerCard index={index} chainId={chainId} />
     </div>
   </div>
 );
