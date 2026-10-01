@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -18,7 +19,13 @@ import {
   type Transport,
   type WalletClient,
 } from "viem";
+import { NETWORKS } from "@/config/contracts";
 import { getChain, isBotChainId } from "@/lib/chain/chains";
+import {
+  defaultChainId,
+  parseCookieChainId,
+  rememberNetwork,
+} from "@/lib/chain/selected";
 import {
   discoverWallets,
   type Eip1193Provider,
@@ -31,6 +38,20 @@ import {
 interface WalletContextValue {
   address: `0x${string}` | null;
   chainId: number | null;
+  /**
+   * The network the app is showing: the wallet's when it is on a BOT chain,
+   * otherwise the one picked in the switcher or, at first, the server's cookie.
+   * Every label and every client-side read goes through this, so they cannot
+   * disagree with the server render that produced them.
+   */
+  selectedChainId: number;
+  /**
+   * True only when the wallet is actually on the network the app is showing.
+   * `isBotChain` on its own was not enough: a wallet sitting on testnet while
+   * the page says mainnet would pass, and the write would land in the wrong
+   * registry — which is the same address on both, as the other network's token.
+   */
+  isOnNetwork: boolean;
   isBotChain: boolean;
   isConnecting: boolean;
   hasProvider: boolean;
@@ -42,6 +63,12 @@ interface WalletContextValue {
   connect: (rdns?: string) => Promise<void>;
   disconnect: () => Promise<void>;
   switchNetwork: (targetChainId?: number) => Promise<void>;
+  /**
+   * Pick a network without a wallet having to agree first: the cookie, the
+   * server render and the RPC all follow, and the wallet is switched too when
+   * there is one to switch.
+   */
+  selectNetwork: (targetChainId: number) => void;
   refresh: () => void;
   getWalletClient: () => WalletClient<Transport, Chain, Account>;
 }
@@ -80,9 +107,24 @@ const writeStored = (key: string, value: string | null) => {
   }
 };
 
-export const WalletProvider = ({ children }: { children: ReactNode }) => {
+export const WalletProvider = ({
+  children,
+  initialChainId,
+}: {
+  children: ReactNode;
+  /**
+   * What the server read from the cookie. Passed in rather than re-read from
+   * `document.cookie` during render, because the server has no `document` and
+   * the two answers would disagree on the very first frame.
+   */
+  initialChainId?: number;
+}) => {
+  const router = useRouter();
   const [address, setAddress] = useState<`0x${string}` | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
+  const [selectedChainId, setSelectedChainId] = useState<number>(
+    () => initialChainId ?? defaultChainId(),
+  );
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [epoch, setEpoch] = useState(0);
@@ -115,6 +157,27 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     const hex = (await provider.request({ method: "eth_chainId" })) as string;
     setChainId(Number.parseInt(hex, 16));
   }, []);
+
+  /**
+   * The server renders from a cookie, because it cannot see this wallet. So
+   * whenever the wallet lands on a BOT network the shown network, the cookie
+   * and the route all follow it — one refresh, and only when they actually
+   * disagreed, so it cannot become a loop.
+   */
+  useEffect(() => {
+    if (!isBotChainId(chainId)) {
+      return;
+    }
+
+    setSelectedChainId((current) => (current === chainId ? current : chainId));
+
+    if (parseCookieChainId(document.cookie) === chainId) {
+      return;
+    }
+
+    rememberNetwork(chainId);
+    router.refresh();
+  }, [chainId, router]);
 
   /** Discovery runs once and keeps listening; wallets can answer late. */
   useEffect(() => {
@@ -262,23 +325,50 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       .catch(() => undefined);
   }, [getProvider, refresh]);
 
+  /**
+   * The default target is the network the visitor is already looking at, not
+   * testnet: a write that has to switch chains should land where the app says
+   * it is, and only fall back to testnet when nothing else has been chosen.
+   */
   const switchNetwork = useCallback(
-    async (targetChainId: number = 968) => {
+    async (targetChainId?: number) => {
       const provider = getProvider();
       if (!provider) {
         return;
       }
 
+      const target = targetChainId ?? selectedChainId;
+
       setError(null);
 
       try {
-        await requestBotChain(provider, targetChainId);
+        await requestBotChain(provider, target);
         await readChainId(provider);
       } catch (cause) {
         setError(toMessage(cause));
       }
     },
-    [getProvider, readChainId],
+    [getProvider, readChainId, selectedChainId],
+  );
+
+  /**
+   * Chosen from the switcher, so it has to hold even without a wallet: the
+   * cookie and the server render follow immediately, and the wallet is asked
+   * to come along only if there is one.
+   */
+  const selectNetwork = useCallback(
+    (targetChainId: number) => {
+      if (!NETWORKS[targetChainId]) {
+        return;
+      }
+
+      setSelectedChainId(targetChainId);
+      rememberNetwork(targetChainId);
+      /** Server components read the cookie, so they have to re-run to follow. */
+      router.refresh();
+      void switchNetwork(targetChainId);
+    },
+    [router, switchNetwork],
   );
 
   const getWalletClient = useCallback(() => {
@@ -303,7 +393,9 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       address,
       chainId,
+      selectedChainId,
       isBotChain: isBotChainId(chainId),
+      isOnNetwork: chainId !== null && chainId === selectedChainId,
       isConnecting,
       hasProvider: hasLegacy || wallets.length > 0,
       error,
@@ -312,12 +404,14 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       connect,
       disconnect,
       switchNetwork,
+      selectNetwork,
       refresh,
       getWalletClient,
     }),
     [
       address,
       chainId,
+      selectedChainId,
       isConnecting,
       hasLegacy,
       wallets,
@@ -326,6 +420,7 @@ export const WalletProvider = ({ children }: { children: ReactNode }) => {
       connect,
       disconnect,
       switchNetwork,
+      selectNetwork,
       refresh,
       getWalletClient,
     ],

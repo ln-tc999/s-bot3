@@ -55,7 +55,7 @@ export const PortfolioProvider = ({
   liveIndexes: initialLiveIndexes,
   children,
 }: PortfolioProviderProps) => {
-  const { address, epoch, chainId } = useWallet();
+  const { address, epoch, selectedChainId } = useWallet();
   const [liveIndexes, setLiveIndexes] =
     useState<LiveIndex[]>(initialLiveIndexes);
   const [shares, setShares] = useState<Record<string, bigint>>({});
@@ -70,7 +70,7 @@ export const PortfolioProvider = ({
   useEffect(() => {
     let cancelled = false;
 
-    fetchIndexes(chainId)
+    fetchIndexes(selectedChainId)
       .then((indexes) => {
         if (!cancelled) {
           setLiveIndexes(indexes);
@@ -81,7 +81,7 @@ export const PortfolioProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [chainId, epoch]);
+  }, [epoch, selectedChainId]);
 
   /**
    * Flattened to a string so the effect depends on the vault list's contents
@@ -99,7 +99,7 @@ export const PortfolioProvider = ({
       return;
     }
 
-    const client = getPublicClient(chainId);
+    const client = getPublicClient(selectedChainId);
 
     const vaults = vaultKey.split(",").map((entry) => {
       const [label, vault] = entry.split(":");
@@ -175,7 +175,7 @@ export const PortfolioProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [address, chainId, epoch, vaultKey]);
+  }, [address, epoch, selectedChainId, vaultKey]);
 
   const value = useMemo<PortfolioContextValue>(() => {
     const positions = liveIndexes.flatMap((entry) => {

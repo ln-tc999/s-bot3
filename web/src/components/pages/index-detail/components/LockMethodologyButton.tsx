@@ -3,7 +3,7 @@
 import { LockSimpleIcon, WarningIcon } from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
 import { sbot3RegistryAbi } from "@/lib/chain/abi";
-import { publicClient } from "@/lib/chain/client";
+import { getPublicClient } from "@/lib/chain/client";
 import { registryAddress } from "@/lib/chain/registry";
 import { useWallet } from "@/lib/onchain/WalletProvider";
 
@@ -20,8 +20,14 @@ export const LockMethodologyButton = ({
   label,
   owner,
 }: LockMethodologyButtonProps) => {
-  const { address, isBotChain, getWalletClient, refresh, switchNetwork } =
-    useWallet();
+  const {
+    address,
+    selectedChainId,
+    isOnNetwork,
+    getWalletClient,
+    refresh,
+    switchNetwork,
+  } = useWallet();
   const [isConfirming, setIsConfirming] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,14 +39,14 @@ export const LockMethodologyButton = ({
   }
 
   const lock = async () => {
-    const registry = registryAddress();
+    const registry = registryAddress(selectedChainId);
 
     if (!registry) {
       setError("The registry is not configured for this deployment.");
       return;
     }
 
-    if (!isBotChain) {
+    if (!isOnNetwork) {
       await switchNetwork();
       return;
     }
@@ -55,7 +61,9 @@ export const LockMethodologyButton = ({
         functionName: "lock",
         args: [label],
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await getPublicClient(selectedChainId).waitForTransactionReceipt({
+        hash,
+      });
       setIsConfirming(false);
       refresh();
       /** The panel reads its lock state on the server, so the page has to refetch. */

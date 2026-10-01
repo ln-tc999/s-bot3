@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TokenStack } from "@/components/ui/TokenStack";
 import { TxSuccessDialog } from "@/components/ui/TxSuccessDialog";
 import { indexHref } from "@/config/navigation";
-import { activeChain } from "@/lib/chain/chains";
+import { useNetwork } from "@/lib/chain/use-network";
 import { cn } from "@/lib/cn";
 import { formatWeight, truncateAddress } from "@/lib/format";
 import { useCreateIndex } from "@/lib/onchain/useCreateIndex";
@@ -126,8 +126,9 @@ export const IndexBuilderForm = () => {
   /** Touch the token list once and the words stop overruling you. */
   const [isSelectionManual, setIsSelectionManual] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
-  const { address, hasProvider, isBotChain, connect, switchNetwork, chainId } =
+  const { address, hasProvider, isOnNetwork, connect, switchNetwork } =
     useWallet();
+  const network = useNetwork();
   const { publish, isPending, error, created, dismiss } = useCreateIndex();
 
   const slug = toSlug(name);
@@ -173,8 +174,8 @@ export const IndexBuilderForm = () => {
     if (!hasProvider || !address) {
       return "Connect wallet";
     }
-    if (!isBotChain) {
-      return `Switch to ${activeChain.name}`;
+    if (!isOnNetwork) {
+      return `Switch to ${network.name}`;
     }
     return "Publish index";
   })();
@@ -439,7 +440,7 @@ export const IndexBuilderForm = () => {
               connect();
               return;
             }
-            if (!isBotChain) {
+            if (!isOnNetwork) {
               switchNetwork();
               return;
             }
@@ -461,7 +462,6 @@ export const IndexBuilderForm = () => {
         isOpen={isConfirming && created === null}
         name={name}
         label={label}
-        chainId={chainId}
         constituents={selectedSymbols.map((symbol) => ({
           token: TOKENS[symbol],
           weightBps: weights[symbol] ?? 0,

@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { SITE } from "@/config/site";
-import { activeChain, explorerAddress } from "@/lib/chain/chains";
+import { explorerAddress } from "@/lib/chain/chains";
 import { registryAddress } from "@/lib/chain/registry";
+import { useNetwork } from "@/lib/chain/use-network";
 
 const LINK_CLASS =
   "text-white/70 transition-colors duration-150 ease-out hover:text-white";
 
 export const Footer = () => {
-  const registry = registryAddress();
+  const network = useNetwork();
+  const registry = registryAddress(network.chainId);
 
   return (
     <footer className="mx-auto w-full max-w-6xl px-4 pb-10 lg:px-8">
@@ -27,7 +29,7 @@ export const Footer = () => {
             BOT Chain
           </a>
           <a
-            href={activeChain.blockExplorers.default.url}
+            href={network.explorerUrl}
             target="_blank"
             rel="noreferrer"
             className={LINK_CLASS}
@@ -36,7 +38,7 @@ export const Footer = () => {
           </a>
           {registry ? (
             <a
-              href={explorerAddress(registry)}
+              href={explorerAddress(registry, network.chainId)}
               target="_blank"
               rel="noreferrer"
               className={`${LINK_CLASS} font-mono text-xs`}

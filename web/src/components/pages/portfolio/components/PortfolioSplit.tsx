@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TokenIcon } from "@/components/ui/TokenIcon";
 import { TokenStack } from "@/components/ui/TokenStack";
 import { indexHref } from "@/config/navigation";
-import { activeChain } from "@/lib/chain/chains";
+import { useNetwork } from "@/lib/chain/use-network";
 import { cn } from "@/lib/cn";
 import { formatAmount, formatUsd, truncateAddress } from "@/lib/format";
 import { useWallet } from "@/lib/onchain/WalletProvider";
@@ -53,6 +53,7 @@ const AllocationBar = ({ positions }: { positions: PortfolioPosition[] }) => {
 
 const WalletStrip = () => {
   const { address } = useWallet();
+  const network = useNetwork();
   const [copied, setCopied] = useState(false);
 
   if (!address) {
@@ -83,9 +84,7 @@ const WalletStrip = () => {
           <span className="block truncate font-mono text-sm font-medium text-ink">
             {truncateAddress(address)}
           </span>
-          <span className="block text-xs text-ink-subtle">
-            {activeChain.name}
-          </span>
+          <span className="block text-xs text-ink-subtle">{network.name}</span>
         </span>
       </span>
 
@@ -119,138 +118,150 @@ export const PortfolioSplit = ({
   positions,
   totalValueUsd,
   allocation,
-}: PortfolioSplitProps) => (
-  <section className="soft-shell grid overflow-hidden rounded-[1.75rem] bg-surface lg:grid-cols-2">
-    <div className="flex flex-col">
-      <div className="space-y-5 p-6 sm:p-7">
-        <div className="flex items-start justify-between gap-4">
-          <p className="text-sm text-ink-muted">Portfolio value</p>
-          <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle py-1 pr-2.5 pl-1 text-xs font-medium text-ink-muted">
-            <TokenIcon token={TOKENS.bot} size="sm" className="ring-0" />
-            {activeChain.name}
-          </span>
-        </div>
+}: PortfolioSplitProps) => {
+  const network = useNetwork();
 
-        <div className="space-y-2">
-          <p className="text-5xl font-semibold tracking-tighter tabular-nums text-ink">
-            {formatUsd(totalValueUsd)}
-          </p>
-          <p className="text-sm text-ink-muted">
-            Priced at what the vaults would pay to redeem it now.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-4 text-xs text-ink-subtle">
-            <span>
-              {positions.length === 1
-                ? "1 index"
-                : `${positions.length} indexes`}
+  return (
+    <section className="soft-shell grid overflow-hidden rounded-[1.75rem] bg-surface lg:grid-cols-2">
+      <div className="flex flex-col">
+        <div className="space-y-5 p-6 sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-ink-muted">Portfolio value</p>
+            <span className="flex items-center gap-1.5 rounded-full bg-surface-subtle py-1 pr-2.5 pl-1 text-xs font-medium text-ink-muted">
+              <TokenIcon token={TOKENS.bot} size="sm" className="ring-0" />
+              {network.name}
             </span>
-            <span className="tabular-nums">{formatUsd(totalValueUsd)}</span>
           </div>
-          <AllocationBar positions={positions} />
+
+          <div className="space-y-2">
+            <p className="text-5xl font-semibold tracking-tighter tabular-nums text-ink">
+              {formatUsd(totalValueUsd)}
+            </p>
+            <p className="text-sm text-ink-muted">
+              Priced at what the vaults would pay to redeem it now.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-4 text-xs text-ink-subtle">
+              <span>
+                {positions.length === 1
+                  ? "1 index"
+                  : `${positions.length} indexes`}
+              </span>
+              <span className="tabular-nums">{formatUsd(totalValueUsd)}</span>
+            </div>
+            <AllocationBar positions={positions} />
+          </div>
+        </div>
+
+        <div className="relative isolate min-h-[420px] flex-1">
+          <Image
+            src="/assets/cat-ui-bg-2.jpg"
+            alt=""
+            fill
+            priority
+            quality={IMAGE_QUALITY}
+            sizes="(max-width: 1024px) 100vw, 32rem"
+            className="object-cover object-center"
+          />
         </div>
       </div>
 
-      <div className="relative isolate min-h-[420px] flex-1">
-        <Image
-          src="/assets/cat-ui-bg-2.jpg"
-          alt=""
-          fill
-          priority
-          quality={IMAGE_QUALITY}
-          sizes="(max-width: 1024px) 100vw, 32rem"
-          className="object-cover object-center"
-        />
-      </div>
-    </div>
+      <div className="flex flex-col border-line lg:border-l">
+        <div className="flex items-center justify-end gap-2 px-5 py-4">
+          <ButtonLink
+            href="/explore"
+            variant="secondary"
+            className="px-3.5 py-2"
+          >
+            Explore
+          </ButtonLink>
+          <ButtonLink href="/trade" className="px-3.5 py-2">
+            Subscribe
+          </ButtonLink>
+        </div>
 
-    <div className="flex flex-col border-line lg:border-l">
-      <div className="flex items-center justify-end gap-2 px-5 py-4">
-        <ButtonLink href="/explore" variant="secondary" className="px-3.5 py-2">
-          Explore
-        </ButtonLink>
-        <ButtonLink href="/trade" className="px-3.5 py-2">
-          Subscribe
-        </ButtonLink>
-      </div>
+        <WalletStrip />
 
-      <WalletStrip />
+        <div className="flex flex-1 flex-col">
+          <h2 className="px-5 pt-5 pb-3 text-sm font-semibold text-ink">
+            Holdings
+          </h2>
 
-      <div className="flex flex-1 flex-col">
-        <h2 className="px-5 pt-5 pb-3 text-sm font-semibold text-ink">
-          Holdings
-        </h2>
+          {positions.length > 0 ? (
+            <ul>
+              {positions.map((position) => {
+                const shareBps =
+                  totalValueUsd === 0
+                    ? 0
+                    : (position.valueUsd / totalValueUsd) *
+                      BASIS_POINTS_PER_UNIT;
 
-        {positions.length > 0 ? (
-          <ul>
-            {positions.map((position) => {
-              const shareBps =
-                totalValueUsd === 0
-                  ? 0
-                  : (position.valueUsd / totalValueUsd) * BASIS_POINTS_PER_UNIT;
-
-              return (
-                <li key={position.index.label} className="border-t border-line">
-                  <Link
-                    href={indexHref(position.index.label)}
-                    className="group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors duration-150 ease-out hover-row-green"
+                return (
+                  <li
+                    key={position.index.label}
+                    className="border-t border-line"
                   >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <TokenStack
-                        constituents={position.index.constituents}
-                        size="sm"
-                        maxVisible={3}
-                      />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-ink">
-                          {position.index.name}
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                          <span className="truncate font-mono text-xs text-ink-muted">
-                            {position.index.label}
+                    <Link
+                      href={indexHref(position.index.label)}
+                      className="group flex items-center justify-between gap-4 px-5 py-3.5 transition-colors duration-150 ease-out hover-row-green"
+                    >
+                      <span className="flex min-w-0 items-center gap-3">
+                        <TokenStack
+                          constituents={position.index.constituents}
+                          size="sm"
+                          maxVisible={3}
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-ink">
+                            {position.index.name}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <span className="truncate font-mono text-xs text-ink-muted">
+                              {position.index.label}
+                            </span>
+                          </span>
+                          <span className="block truncate text-xs tabular-nums text-ink-subtle">
+                            {`${formatAmount(position.units)} units · ${(shareBps / 100).toFixed(1)}%`}
                           </span>
                         </span>
-                        <span className="block truncate text-xs tabular-nums text-ink-subtle">
-                          {`${formatAmount(position.units)} units · ${(shareBps / 100).toFixed(1)}%`}
+                      </span>
+
+                      <span className="flex shrink-0 items-center gap-3">
+                        <span className="text-sm font-semibold tabular-nums text-ink">
+                          {formatUsd(position.valueUsd)}
                         </span>
+                        <ArrowRightIcon
+                          size={14}
+                          aria-hidden
+                          className="text-ink-subtle transition-colors duration-150 ease-out group-hover:text-ink"
+                        />
                       </span>
-                    </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <div className="flex items-center border-t border-line">
+              <EmptyState
+                title="No holdings yet"
+                description="Subscribe to an index and it will appear here with its unit balance."
+              />
+            </div>
+          )}
 
-                    <span className="flex shrink-0 items-center gap-3">
-                      <span className="text-sm font-semibold tabular-nums text-ink">
-                        {formatUsd(position.valueUsd)}
-                      </span>
-                      <ArrowRightIcon
-                        size={14}
-                        aria-hidden
-                        className="text-ink-subtle transition-colors duration-150 ease-out group-hover:text-ink"
-                      />
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <div className="flex items-center border-t border-line">
-            <EmptyState
-              title="No holdings yet"
-              description="Subscribe to an index and it will appear here with its unit balance."
-            />
-          </div>
-        )}
-
-        {allocation.length > 0 ? (
-          <div className="flex-1 border-t border-line px-5 pt-5 pb-6">
-            <h2 className="mb-4 text-sm font-semibold text-ink">
-              Look through exposure
-            </h2>
-            <AllocationRows allocation={allocation} />
-          </div>
-        ) : null}
+          {allocation.length > 0 ? (
+            <div className="flex-1 border-t border-line px-5 pt-5 pb-6">
+              <h2 className="mb-4 text-sm font-semibold text-ink">
+                Look through exposure
+              </h2>
+              <AllocationRows allocation={allocation} />
+            </div>
+          ) : null}
+        </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};

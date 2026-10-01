@@ -2,12 +2,12 @@
 
 import { DropIcon } from "@phosphor-icons/react/dist/ssr";
 import { useEffect, useState } from "react";
-import { activeChain } from "@/lib/chain/chains";
 import {
   fetchRegisteredSymbols,
   fetchTokenAddresses,
   tokenBookAddress,
 } from "@/lib/chain/tokenbook";
+import { useNetwork } from "@/lib/chain/use-network";
 import { cn } from "@/lib/cn";
 import { useVaultActions } from "@/lib/onchain/useVaultActions";
 import { useWallet } from "@/lib/onchain/WalletProvider";
@@ -24,24 +24,33 @@ import { useWallet } from "@/lib/onchain/WalletProvider";
  * binds real tokens that have no such function.
  */
 export const FaucetButton = () => {
-  const { address, isBotChain, chainId } = useWallet();
+  const { address, chainId } = useWallet();
   const actions = useVaultActions();
   const [tokens, setTokens] = useState<`0x${string}`[]>([]);
   /** Distinct from "none bound": a read in flight must not be reported as empty. */
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const book = tokenBookAddress(chainId);
+  /**
+   * The network on show, not the build's: `activeChain` is fixed at build
+   * time, so a testnet build kept offering a faucet after the wallet moved to
+   * mainnet — where `faucet()` either reverts or mints something that should
+   * not be mintable. On mainnet the button is not rendered at all.
+   */
+  const network = useNetwork();
+  const book = tokenBookAddress(network.chainId);
 
   useEffect(() => {
-    if (!book || !activeChain.testnet) {
+    if (!book || !network.isTestnet) {
       return;
     }
 
     let cancelled = false;
 
-    fetchRegisteredSymbols(chainId)
+    fetchRegisteredSymbols(network.chainId)
       .then((symbols) =>
-        symbols.length > 0 ? fetchTokenAddresses(symbols, chainId) : null,
+        symbols.length > 0
+          ? fetchTokenAddresses(symbols, network.chainId)
+          : null,
       )
       .then((addresses) => {
         if (!cancelled) {
@@ -58,9 +67,9 @@ export const FaucetButton = () => {
     return () => {
       cancelled = true;
     };
-  }, [book, chainId]);
+  }, [book, network]);
 
-  if (!activeChain.testnet) {
+  if (!network.isTestnet) {
     return null;
   }
 
@@ -69,7 +78,7 @@ export const FaucetButton = () => {
     if (!isLoaded) return "Reading the token book…";
     if (tokens.length === 0) return "No constituents are bound yet";
     if (!address) return "Connect a wallet first";
-    if (!isBotChain) return `Switch to ${activeChain.name}`;
+    if (chainId !== network.chainId) return `Switch to ${network.name}`;
     return null;
   })();
 

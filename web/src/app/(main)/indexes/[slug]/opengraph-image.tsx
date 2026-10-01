@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 import { SITE } from "@/config/site";
-import { activeChain } from "@/lib/chain/chains";
+import { getChain } from "@/lib/chain/chains";
 import { fetchIndex } from "@/lib/chain/registry";
+import { selectedChainId } from "@/lib/chain/selected.server";
 
 export const alt = "An index published on BOT Chain";
 export const size = { width: 1200, height: 630 };
@@ -28,7 +29,8 @@ export default async function OpengraphImage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const index = await fetchIndex(slug).catch(() => null);
+  const chainId = await selectedChainId();
+  const index = await fetchIndex(slug, chainId).catch(() => null);
 
   if (!index) {
     return new ImageResponse(
@@ -188,7 +190,7 @@ export default async function OpengraphImage({
         </div>
 
         <div style={{ display: "flex", fontSize: 24, color: MUTED }}>
-          {activeChain.name}
+          {getChain(chainId).name}
         </div>
       </div>
     </div>,

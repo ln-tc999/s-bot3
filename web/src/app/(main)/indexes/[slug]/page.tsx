@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { IndexDetailPage } from "@/components/pages/index-detail";
 import { fetchIndex } from "@/lib/chain/registry";
+import { selectedChainId } from "@/lib/chain/selected.server";
 
 /** Records change only when someone publishes, so a short window is enough. */
 export const revalidate = 30;
@@ -14,7 +15,9 @@ export async function generateMetadata({
   params,
 }: IndexRouteProps): Promise<Metadata> {
   const { slug } = await params;
-  const index = await fetchIndex(slug).catch(() => null);
+  const index = await fetchIndex(slug, await selectedChainId()).catch(
+    () => null,
+  );
 
   if (!index) {
     return { title: "Index not found" };
@@ -38,11 +41,12 @@ export async function generateMetadata({
 
 export default async function IndexRoute({ params }: IndexRouteProps) {
   const { slug } = await params;
-  const index = await fetchIndex(slug).catch(() => null);
+  const chainId = await selectedChainId();
+  const index = await fetchIndex(slug, chainId).catch(() => null);
 
   if (!index) {
     notFound();
   }
 
-  return <IndexDetailPage index={index} />;
+  return <IndexDetailPage index={index} chainId={chainId} />;
 }

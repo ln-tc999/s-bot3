@@ -9,6 +9,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { explorerTx } from "@/lib/chain/chains";
 import { truncateAddress } from "@/lib/format";
+import { useWallet } from "@/lib/onchain/WalletProvider";
 import { CopyButton } from "./CopyButton";
 
 const PANEL = {
@@ -119,6 +120,12 @@ export const TxSuccessDialog = ({
 }: TxSuccessDialogProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isVisible, setIsVisible] = useState(false);
+  /**
+   * The explorer link has to point at the chain the signature went to, not the
+   * one this build was configured with — the two share nothing but the
+   * deployer's nonce.
+   */
+  const { selectedChainId } = useWallet();
 
   /**
    * The dialog element opens immediately so the browser keeps the top layer,
@@ -143,7 +150,7 @@ export const TxSuccessDialog = ({
             label: "Transaction",
             value: (
               <a
-                href={explorerTx(hash)}
+                href={explorerTx(hash, selectedChainId)}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1.5 font-mono text-xs text-ink transition-colors duration-150 ease-out hover:text-accent"

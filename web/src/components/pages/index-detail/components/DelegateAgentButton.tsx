@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { isAddress } from "viem";
 import { sbot3RegistryAbi } from "@/lib/chain/abi";
-import { publicClient } from "@/lib/chain/client";
+import { getPublicClient } from "@/lib/chain/client";
 import { registryAddress } from "@/lib/chain/registry";
 import { useWallet } from "@/lib/onchain/WalletProvider";
 
@@ -26,7 +26,13 @@ export const DelegateAgentButton = ({
   owner,
   agent,
 }: DelegateAgentButtonProps) => {
-  const { address, isBotChain, getWalletClient, switchNetwork } = useWallet();
+  const {
+    address,
+    selectedChainId,
+    isOnNetwork,
+    getWalletClient,
+    switchNetwork,
+  } = useWallet();
   const [value, setValue] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,14 +42,14 @@ export const DelegateAgentButton = ({
   }
 
   const submit = async (next: string) => {
-    const registry = registryAddress();
+    const registry = registryAddress(selectedChainId);
 
     if (!registry) {
       setError("The registry is not configured for this deployment.");
       return;
     }
 
-    if (!isBotChain) {
+    if (!isOnNetwork) {
       await switchNetwork();
       return;
     }
@@ -63,7 +69,9 @@ export const DelegateAgentButton = ({
         functionName: "delegate",
         args: [label, next as `0x${string}`],
       });
-      await publicClient.waitForTransactionReceipt({ hash });
+      await getPublicClient(selectedChainId).waitForTransactionReceipt({
+        hash,
+      });
       globalThis.location.reload();
     } catch (cause) {
       setError(

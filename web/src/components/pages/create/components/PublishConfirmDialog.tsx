@@ -9,7 +9,7 @@ import {
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useRef } from "react";
 import { TokenStack } from "@/components/ui/TokenStack";
-import { getChain } from "@/lib/chain/chains";
+import { useNetwork } from "@/lib/chain/use-network";
 import { formatWeight, truncateAddress } from "@/lib/format";
 import type { Constituent } from "@/types/index-fund";
 
@@ -28,7 +28,6 @@ interface PublishConfirmDialogProps {
   isOpen: boolean;
   name: string;
   label: string;
-  chainId: number | null;
   constituents: Constituent[];
   totalWeightBps: number;
   owner: `0x${string}` | null;
@@ -65,7 +64,6 @@ export const PublishConfirmDialog = ({
   isOpen,
   name,
   label,
-  chainId,
   constituents,
   totalWeightBps,
   owner,
@@ -75,6 +73,7 @@ export const PublishConfirmDialog = ({
   onClose,
 }: PublishConfirmDialogProps) => {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const network = useNetwork();
 
   useEffect(() => {
     if (isOpen) {
@@ -142,7 +141,7 @@ export const PublishConfirmDialog = ({
                 </span>
               </Row>
               <Row icon={GlobeHemisphereWestIcon} label="Network">
-                <span className="text-ink">{getChain(chainId).name}</span>
+                <span className="text-ink">{network.name}</span>
               </Row>
             </dl>
 

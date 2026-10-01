@@ -1,9 +1,12 @@
+"use client";
+
 import { LockSimpleIcon, RobotIcon } from "@phosphor-icons/react/dist/ssr";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
-import { activeChain, explorerAddress } from "@/lib/chain/chains";
+import { explorerAddress } from "@/lib/chain/chains";
 import type { LiveIndex } from "@/lib/chain/registry";
 import { registryAddress } from "@/lib/chain/registry";
+import { useNetwork } from "@/lib/chain/use-network";
 import { truncateAddress } from "@/lib/format";
 import { LockMethodologyButton } from "./LockMethodologyButton";
 
@@ -11,9 +14,15 @@ interface OnchainPanelProps {
   index: LiveIndex;
 }
 
-const ExplorerLink = ({ address }: { address: `0x${string}` }) => (
+const ExplorerLink = ({
+  address,
+  chainId,
+}: {
+  address: `0x${string}`;
+  chainId: number;
+}) => (
   <a
-    href={explorerAddress(address)}
+    href={explorerAddress(address, chainId)}
     target="_blank"
     rel="noreferrer"
     className="font-mono text-xs text-ink hover:text-accent"
@@ -27,20 +36,26 @@ const ExplorerLink = ({ address }: { address: `0x${string}` }) => (
  * app, which is why the lock badge is a badge and not a promise.
  */
 export const OnchainPanel = ({ index }: OnchainPanelProps) => {
-  const registry = registryAddress();
+  /**
+   * Follows whichever network the visitor is on, wallet first and cookie
+   * otherwise — the same answer the server used to render this page with, so
+   * the badge and the explorer link cannot name two different chains.
+   */
+  const network = useNetwork();
+  const registry = registryAddress(network.chainId);
 
   return (
     <Card>
       <CardHeader
         title="Onchain state"
-        action={<Badge tone="positive">{`Live on ${activeChain.name}`}</Badge>}
+        action={<Badge tone="positive">{`Live on ${network.name}`}</Badge>}
       />
       <dl className="space-y-2.5 px-5 pb-5 text-sm">
         <div className="flex items-center justify-between gap-4">
           <dt className="text-ink-subtle">Registry</dt>
           <dd>
             {registry ? (
-              <ExplorerLink address={registry} />
+              <ExplorerLink address={registry} chainId={network.chainId} />
             ) : (
               <span className="text-xs text-ink-muted">Not configured</span>
             )}
@@ -53,7 +68,7 @@ export const OnchainPanel = ({ index }: OnchainPanelProps) => {
         <div className="flex items-center justify-between gap-4">
           <dt className="text-ink-subtle">Owner</dt>
           <dd>
-            <ExplorerLink address={index.owner} />
+            <ExplorerLink address={index.owner} chainId={network.chainId} />
           </dd>
         </div>
         <div className="flex items-center justify-between gap-4">

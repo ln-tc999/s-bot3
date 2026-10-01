@@ -8,15 +8,15 @@ import { PRIMARY_NAV } from "@/config/navigation";
 import { SITE } from "@/config/site";
 import { explorerAddress } from "@/lib/chain/chains";
 import { registryAddress } from "@/lib/chain/registry";
+import { useNetwork } from "@/lib/chain/use-network";
 import { cn } from "@/lib/cn";
-import { useWallet } from "@/lib/onchain/WalletProvider";
 import { FaucetButton } from "./FaucetButton";
 
 export const Sidebar = () => {
   const pathname = usePathname();
   /** Only for the registry link, which is per network now. */
-  const { chainId } = useWallet();
-  const registry = registryAddress(chainId);
+  const network = useNetwork();
+  const registry = registryAddress(network.chainId);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -87,7 +87,7 @@ export const Sidebar = () => {
           {/* Router / Explorer Icon Button */}
           {registry ? (
             <a
-              href={explorerAddress(registry)}
+              href={explorerAddress(registry, network.chainId)}
               target="_blank"
               rel="noreferrer"
               title="View Registry on BOTScan Explorer"

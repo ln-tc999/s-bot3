@@ -6,6 +6,7 @@ import { formatBps, formatUsd, truncateAddress } from "@/lib/format";
 
 interface VaultStatsProps {
   vault: VaultSummary;
+  chainId: number;
 }
 
 /**
@@ -14,7 +15,7 @@ interface VaultStatsProps {
  * Drift is the interesting one: it is not a warning, it is the record of a
  * rebalance that the holdings have not caught up with yet.
  */
-export const VaultStats = ({ vault }: VaultStatsProps) => (
+export const VaultStats = ({ vault, chainId }: VaultStatsProps) => (
   <Card>
     <CardHeader
       title="Vault"
@@ -43,7 +44,7 @@ export const VaultStats = ({ vault }: VaultStatsProps) => (
         <dt className="text-ink-subtle">Settles in</dt>
         <dd>
           <a
-            href={explorerAddress(vault.address)}
+            href={explorerAddress(vault.address, chainId)}
             target="_blank"
             rel="noreferrer"
             className="font-mono text-xs text-ink hover:text-accent"

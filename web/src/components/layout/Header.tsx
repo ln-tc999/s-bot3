@@ -2,6 +2,7 @@
 
 import { SignOutIcon, WarningIcon } from "@phosphor-icons/react/dist/ssr";
 import { useState } from "react";
+import { useNetwork } from "@/lib/chain/use-network";
 import { cn } from "@/lib/cn";
 import { truncateAddress } from "@/lib/format";
 import { useWallet } from "@/lib/onchain/WalletProvider";
@@ -57,12 +58,13 @@ const WalletControl = () => {
     address,
     hasProvider,
     isConnecting,
-    isBotChain,
+    isOnNetwork,
     wallets,
     connect,
     disconnect,
     switchNetwork,
   } = useWallet();
+  const network = useNetwork();
   const [isPicking, setIsPicking] = useState(false);
 
   if (!hasProvider) {
@@ -105,15 +107,15 @@ const WalletControl = () => {
     );
   }
 
-  if (!isBotChain) {
+  if (!isOnNetwork) {
     return (
       <button
         type="button"
-        onClick={() => switchNetwork(968)}
+        onClick={() => switchNetwork()}
         className="flex h-[42px] min-w-0 items-center gap-1.5 rounded-[8px] bg-negative px-3 text-sm font-medium text-ink-inverse transition-opacity duration-150 ease-out hover:opacity-90"
       >
         <WarningIcon size={14} weight="fill" aria-hidden className="shrink-0" />
-        <span className="truncate">Switch to Testnet</span>
+        <span className="truncate">{`Switch to ${network.name}`}</span>
       </button>
     );
   }

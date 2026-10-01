@@ -10,7 +10,7 @@ import { TokenIcon } from "@/components/ui/TokenIcon";
 import { tradeHref } from "@/config/navigation";
 import { sbot3RegistryAbi } from "@/lib/chain/abi";
 import { explorerAddress } from "@/lib/chain/chains";
-import { publicClient } from "@/lib/chain/client";
+import { getPublicClient } from "@/lib/chain/client";
 import { registryAddress } from "@/lib/chain/registry";
 import { tokenBookAddress } from "@/lib/chain/tokenbook";
 import {
@@ -51,7 +51,13 @@ export const ShareTokenCard = ({
   vault,
   constituents,
 }: ShareTokenCardProps) => {
-  const { address, isBotChain, getWalletClient, switchNetwork } = useWallet();
+  const {
+    address,
+    selectedChainId,
+    isOnNetwork,
+    getWalletClient,
+    switchNetwork,
+  } = useWallet();
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [seed, setSeed] = useState(DEFAULT_SEED_NAV);
   const [fee, setFee] = useState(String(DEFAULT_FEE_BPS));
@@ -60,7 +66,7 @@ export const ShareTokenCard = ({
   const [error, setError] = useState<string | null>(null);
 
   const isOwner = address?.toLowerCase() === owner.toLowerCase();
-  const book = tokenBookAddress();
+  const book = tokenBookAddress(selectedChainId);
 
   /**
    * What one share would ask for, per constituent, at the prices typed so far.
@@ -115,7 +121,7 @@ export const ShareTokenCard = ({
           </p>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <a
-              href={explorerAddress(vault)}
+              href={explorerAddress(vault, selectedChainId)}
               target="_blank"
               rel="noreferrer"
               className="font-mono text-xs text-ink hover:text-accent"
@@ -135,14 +141,15 @@ export const ShareTokenCard = ({
   }
 
   const deploy = async () => {
-    const registry = registryAddress();
+    /** The network on show — the vault is deployed onto it, not onto the build's default. */
+    const registry = registryAddress(selectedChainId);
 
     if (!registry || !book) {
       setError("Settlement is not configured for this deployment.");
       return;
     }
 
-    if (!isBotChain) {
+    if (!isOnNetwork) {
       await switchNetwork();
       return;
     }
@@ -205,7 +212,9 @@ export const ShareTokenCard = ({
           (address ?? owner) as `0x${string}`,
         ],
       });
-      const receipt = await publicClient.waitForTransactionReceipt({
+      const receipt = await getPublicClient(
+        selectedChainId,
+      ).waitForTransactionReceipt({
         hash: deployHash,
       });
 
@@ -220,7 +229,9 @@ export const ShareTokenCard = ({
         functionName: "setVault",
         args: [label, receipt.contractAddress],
       });
-      await publicClient.waitForTransactionReceipt({ hash: attachHash });
+      await getPublicClient(selectedChainId).waitForTransactionReceipt({
+        hash: attachHash,
+      });
 
       globalThis.location.reload();
     } catch (cause) {
