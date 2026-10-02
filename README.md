@@ -164,7 +164,20 @@ One deployment serves both networks. The switcher in the header moves the
 wallet between them, and balances, index data and explorer links all reload
 from whichever is selected.
 
-Testnet is live. Mainnet only appears in the switcher once
+Both networks are live:
+
+| | Testnet `968` | Mainnet `677` |
+|---|---|---|
+| Indexes | 6 (`defi3`, `stable`, `l2`, `lsd`, `ai`, `hacks-day`) | 1 — [`usd-reserve`](https://s-bot3.vercel.app/indexes/usd-reserve) |
+| Share token | none attached | [`0xE9D79506…7160`](https://scan.botchain.ai/address/0xE9D79506B578918338F98Cf9E9d55Fe361727160), attached |
+| Tradeable | no | yes — `previewSubscribe` prices 100 shares at 100,2 mUSDC |
+
+Mainnet holds one index because its book binds one symbol. `usd-reserve` is
+10,000 bps of `usdc` and nothing else: a deliberate single constituent rather
+than a basket assembled from tokens nobody has audited. The rest of the plan
+follows as `btc`, `eth` and `sol` become bindable there.
+
+Mainnet only appears in the switcher once
 `NEXT_PUBLIC_MAINNET_REGISTRY_ADDRESS` and `NEXT_PUBLIC_MAINNET_TOKENBOOK_ADDRESS`
 are set, which is deliberate — an option that cannot settle anything is worse
 than no option.
