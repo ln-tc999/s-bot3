@@ -1,4 +1,5 @@
 import { NETWORKS } from "@/config/contracts";
+import { DEFAULT_CHAIN_ID } from "./chains";
 
 /**
  * Which network the app is showing when no wallet is there to say.
@@ -43,8 +44,7 @@ export const parseCookieChainId = (
   header ? parseChainIdValue(readCookieValue(header)) : null;
 
 /** The configured default, for a visitor who has never chosen. */
-export const defaultChainId = (): number =>
-  knownChainId(Number(process.env.NEXT_PUBLIC_CHAIN_ID ?? 968)) ?? 968;
+export const defaultChainId = (): number => DEFAULT_CHAIN_ID;
 
 /**
  * Remember the network so the next server render reads the same one.
