@@ -1,4 +1,4 @@
-import { botMainnet, botTestnet } from "@/lib/chain/chains";
+import { botMainnet, botTestnet, DEFAULT_CHAIN_ID } from "@/lib/chain/chains";
 
 /**
  * Settlement is in kind, so there is no single quote token to configure — a
@@ -57,8 +57,6 @@ export const NETWORKS: Record<number, NetworkInfo> = {
     chain: botMainnet,
   },
 };
-
-export const DEFAULT_CHAIN_ID = 968;
 
 export const getNetworkConfig = (chainId?: number | null): NetworkInfo => {
   if (chainId && NETWORKS[chainId]) {
